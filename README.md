@@ -31,22 +31,37 @@ kubectl_helm/
 ├── bin_sh
 │   ├── build_app
 │   ├── cleanup
+│   ├── create_keystores
+│   ├── list_keystores
 │   ├── login_padogrid_pod
+│   ├── remove_keystores
 │   ├── setenv.sh
+│   ├── start_dashboard
 │   ├── start_hazelcast
+│   ├── start_ingress
 │   ├── start_padogrid
+│   ├── stop_dashboard
 │   ├── stop_hazelcast
+│   ├── stop_ingress
 │   └── stop_padogrid
+├── dashboard
+│   ├── admin-user.yaml
+│   └── crb.yaml
 ├── etc
 │   └── hazelcast-enterprise
-│       └── secret.yaml
+│       ├── hz-secret.yaml
+│       └── mc-secret.yaml
 ├── hazelcast
+│   ├── mc-ingress-enterprise.yaml
+│   ├── mc-ingress-oss.yaml
 │   └── values.yaml
 └── padogrid
-│   ├── padogrid.yaml
-│   └── pv-hostPath.yaml
-└── prometheus
-    └── service-monitor.yaml
+    ├── padogrid-configmap-enterprise.yaml
+    ├── padogrid-configmap-oss.yaml
+    ├── padogrid-ingress.yaml
+    ├── padogrid-no-pvc.yaml
+    ├── padogrid.yaml
+    └── pv-hostPath.yaml
 ```
 
 ## 1. Build Local Environment
