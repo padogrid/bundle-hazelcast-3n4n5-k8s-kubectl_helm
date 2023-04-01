@@ -9,7 +9,7 @@ This bundle deploys Hazelcast using Helm Charts using `kubectl`. It also include
 ## Installing Bundle
 
 ```bash
-install_bundle -download bundle-hazelcast-3n4n5-k8s-kubectl_helm
+install_bundle -force -download bundle-hazelcast-3n4n5-k8s-kubectl_helm
 ```
 
 ## Use Case
