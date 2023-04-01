@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: padogrid-configmap
+  labels:
+    app: padogrid
+data:
+  HAZELCAST_SERVICE: kubectl-helm-hazelcast-enterprise
+  HAZELCAST_CLUSTER_NAME: dev
+  PADOGRID_HTTPS_ENABLED: "false"
+  PADOGRID_SERVICE_NAME: padogrid-service

@@ -1,0 +1,45 @@
+# Security Context properties
+securityContext:
+  # enabled is a flag to enable Security Context
+  enabled: true
+  # runAsUser is the user ID used to run the container
+  runAsUser: 1000700000
+  # runAsGroup is the primary group ID used to run all processes within any container of the pod
+  runAsGroup: 1000700000
+  # fsGroup is the group ID associated with the container
+  fsGroup: 1000700000
+
+metrics:
+  enabled: true
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations:
+      prometheus.io/path: /metrics
+      prometheus.io/scrape: "true"
+
+hazelcast:
+  javaOpts: -Dhazelcast.jmx=true -Dhazelcast.shutdownhook.enabled=true -Dhazelcast.graceful.shutdown.max.wait=600 -Dhazelcast.shutdownhook.policy=GRACEFUL
+  yaml:
+    hazelcast:
+      properties:
+        hazelcast.phone.home.enabled: false
+      network:
+        rest-api:
+          enabled: true
+          endpoint-groups:
+            CLUSTER_READ:
+              enabled: true
+            CLUSTER_WRITE:
+              enabled: true
+            HEALTH_CHECK:
+              enabled: true
+            HOT_RESTART:
+              enabled: true
+            WAN:
+              enabled: true
+            DATA:
+              enabled: true
+
+mancenter:
+  javaOpts: -Dhazelcast.mc.prometheusExporter.enabled=true -Dhazelcast.mc.jmx.enabled=true

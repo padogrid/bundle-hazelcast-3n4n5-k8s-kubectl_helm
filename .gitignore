@@ -7,50 +7,44 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
+# https://github.com/takari/maven-wrapper#usage-without-binary-jar
 .mvn/wrapper/maven-wrapper.jar
 
 # Eclipse
-.classpath
 .project
 .settings
 
-# macOS
-.DS_Store
+# Jupyter
+.ipynb*
 
-# vi
-*.swp
+# VS Code
+workspace.code-workspace
 
-# PadoGrid workspace
+# PadoGrid
 /.addonenv.sh
-/initenv.sh
+initenv.sh
 /setenv.sh
 /vmenv.sh
-bundles
-lib
-plugins
-workspace.code-workspace
-.ipynb_checkpoints
-
-# PadoGrid workspace directories
 apps
+bundles
 clusters
 docker
-groups
-k8s
+#k8s
+lib
+plugins
 pods
 .workspace
 .cluster
+.gitignore0
 
-# Bundle specifics
+# App specifics
 archive
 log
 lib
 desktop
+setenv.sh0
 build
-stats
-run
-results
-*.drawio.bkp
-*.sh0
-pom.xml0
-build
+k8s/kubectl_helm/hazelcast/hz-secret.yaml
+k8s/kubectl_helm/hazelcast/mc-secret.yaml
+k8s/kubectl_helm/hazelcast/ingress.yaml
+k8s/kubectl_helm/etc/tls

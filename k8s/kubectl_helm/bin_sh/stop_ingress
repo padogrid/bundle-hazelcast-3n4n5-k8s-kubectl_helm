@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+. $SCRIPT_DIR/.addonenv.sh
+
+EXECUTABLE="`basename $0`"
+
+if [ "$HELP" == "true" ]; then
+cat <<EOF
+
+NAME
+   $EXECUTABLE - Delete ingress-nginx and associated artifiacts
+
+SYNOPSIS
+   $EXECUTABLE [-?]
+
+DESCRIPTION
+   Deletes ingress-nginx and associated artifiacts
+
+OPTIONS
+   -oss
+             If specified launches Hazelcast OSS, otherwise, Hazelcast Enterprise which requires 
+             a license key.
+
+DEFAULT:
+   ./$EXECUTABLE
+
+SEE ALSO
+   https://github.com/kubernetes/ingress-nginx
+
+EOF
+exit
+fi
+
+echo "Deleting ingress..."
+
+if [ "$OSS" == "true" ]; then
+   kubectl delete -f $APP_DIR/hazelcast/mc-ingress-oss.yaml
+else
+   kubectl delete -f $APP_DIR/hazelcast/mc-ingress-enterprise.yaml
+fi
+kubectl delete -f $APP_DIR/padogrid/padogrid-ingress.yaml
+kubectl delete secret tls-secret 
+if [ "$(kubectl get nodes | grep minikube)" == "" ]; then
+   helm uninstall ingress-nginx --namespace=$INGRESS_NAMESPACE
+fi

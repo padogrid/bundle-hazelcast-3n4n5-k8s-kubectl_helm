@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+. $SCRIPT_DIR/.addonenv.sh
+
+EXECUTABLE="`basename $0`"
+
+if [ "$HELP" == "true" ]; then
+cat <<EOF
+
+NAME
+   $EXECUTABLE - Install ingress-nginx and set rules for Management Center HTTPS
+
+SYNOPSIS
+   $EXECUTABLE [-?]
+
+DESCRIPTION
+   Installs ingress-nginx and set rules for Management Center HTTPS. It takes some
+   time to start ingress-nginx. If you see an error, then rerun this script.
+
+OPTIONS
+   -oss
+             If specified launches Hazelcast OSS, otherwise, Hazelcast Enterprise which requires 
+             a license key.
+
+DEFAULT:
+   ./$EXECUTABLE
+
+SEE ALSO
+   https://github.com/kubernetes/ingress-nginx
+
+EOF
+exit
+fi
+
+if [ "$(kubectl get nodes | grep minikube)" != "" ]; then
+   if [ "$(minikube addons list |grep "ingress " | grep disabled)" != "" ]; then
+      minikube addons enable ingress
+   fi
+else
+   helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+   helm repo update
+   helm install ingress-nginx ingress-nginx/ingress-nginx --create-namespace --namespace $INGRESS_NAMESPACE \
+       --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-health-probe-request-path"=/healthz
+   # Wait a bit for the ingress to start
+   echo "Waiting 20 sec for ingress to initialize..."
+   sleep 20
+fi
+
+# Generate key/certificate and create secret if it does not exist
+if [ ! -d "$TLS_DIR" ]; then
+   mkdir "$TLS_DIR"
+fi
+if [ ! -f "$TLS_DIR/tls-ingress.key" ]; then
+   openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out "$TLS_DIR/tls-ingress.crt" -keyout "$TLS_DIR/tls-ingress.key" -subj "/CN=*.demo.com"
+fi
+if [ "$(kubectl get secret tls-secret 2> /dev/null)" == "" ]; then
+   kubectl create secret tls tls-secret --namespace $NAMESPACE --cert="$TLS_DIR/tls-ingress.crt" --key "$TLS_DIR/tls-ingress.key" -o yaml
+fi
+
+if [ "$OSS" == "true" ]; then
+   echo kubectl apply -f $APP_DIR/hazelcast/mc-ingress-oss.yaml
+   kubectl apply -f $APP_DIR/hazelcast/mc-ingress-oss.yaml
+else
+   echo kubectl apply -f $APP_DIR/hazelcast/mc-ingress-enterprise.yaml
+   kubectl apply -f $APP_DIR/hazelcast/mc-ingress-enterprise.yaml
+fi
+kubectl apply -f $APP_DIR/padogrid/padogrid-ingress.yaml

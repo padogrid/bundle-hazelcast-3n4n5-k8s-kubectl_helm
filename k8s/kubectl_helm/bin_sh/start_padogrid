@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+. $SCRIPT_DIR/.addonenv.sh
+
+EXECUTABLE="`basename $0`"
+
+if [ "$1" == "-?" ]; then
+cat <<EOF
+
+NAME
+   $EXECUTABLE - Start padogrid pod
+
+SYNOPSIS
+   $EXECUTABLE [storage_class] [-?]
+
+DESCRIPTION
+   Launches a PadoGrid pod with the name 'padogrid'. Padogrid keeps workspaces in the '/opt/padogrid/workspaces'
+   directory. You can optionally mount that directory to a persistent volume as follows.
+
+   Execute the following command to list the available storage classes.
+
+      kubectl get storageclass
+
+OPTIONS
+   storage_class
+             The specified storage class is used as the Storage Class for the 'paodgrid-pvc' Persistent
+             Volume Claim. If you are connected to CRC, then you must specify 'local-storage'. The 'local-storeage'
+             persistent volumes must also be created beforehand as described in the bundle instructions.
+             
+             If this option is not specified, then the default storage class is assigned. For CRC, the
+             default storage classs is undefined, and therefore, the persistent volume claim is not made
+             and the container file system is used instead. 
+
+SEE ALSO
+   login_padogrid_pod(1), padogrid/padogrid.yaml, padogrid/padogrid-no-pvc.yaml
+
+EOF
+exit
+fi
+
+#HAZELCAST_SERVICE="$(kubectl get svc | grep 5701 | awk '{ print $1 }')"
+HAZELCAST_ENTERPRISE_SERVICES="$(kubectl get svc | grep hazelcast-enterprise)"
+
+if [ "$HAZELCAST_ENTERPRISE_SERVICES" != "" ]; then
+  CONFIGMAP_FILE="padogrid-configmap-enterprise.yaml"
+else
+  CONFIGMAP_FILE="padogrid-configmap-oss.yaml"
+fi
+
+#kubectl create -f $APP_DIR/padogrid/padogrid-no-pvc.yaml -o yaml 
+#kubectl -f $APP_DIR/padogrid/padogrid-no-pvc.yaml -o yaml | kubectl create -f -
+echo kubectl apply -f $APP_DIR/padogrid/$CONFIGMAP_FILE
+kubectl apply -f $APP_DIR/padogrid/$CONFIGMAP_FILE
+kubectl apply -f $APP_DIR/padogrid/padogrid.yaml
+

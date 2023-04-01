@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+. $SCRIPT_DIR/.addonenv.sh
+
+EXECUTABLE="`basename $0`"
+
+if [ "$HELP" == "true" ]; then
+cat <<EOF
+
+NAME
+   $EXECUTABLE - Stop Kubernetes Dashboard and delete all associated artifacts
+
+SYNOPSIS
+   $EXECUTABLE [-?]
+
+DESCRIPTION
+   Stops Kubernetes Dashboard and deletes all associated artifacts.
+
+OPTIONS
+
+DEFAULT:
+   ./$EXECUTABLE
+
+SEE ALSO
+   https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/
+
+EOF
+exit
+fi
+
+echo "Stopping Kubernetes Dashboard..."
+pushd $APP_DIR/dashboard > /dev/null
+kubectl delete -f admin-user.yaml
+kubectl delete -f crb.yaml
+popd > /dev/null
+
+kubectl delete -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+PID=$(ps -wweo pid,comm,args | grep "kubectl proxy" |grep -v grep| awk '{print $1}')
+if [ "$PID" != "" ]; then
+   kill -9 $PID
+   echo "Proxy stopped."
+else
+   echo "Proxy not running."
+fi

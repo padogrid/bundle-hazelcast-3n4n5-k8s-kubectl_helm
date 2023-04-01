@@ -10,21 +10,14 @@
 #
 # hazelast=3.12,4.1.1,4.2
 #
-# To deemphasize products, i.e., product not required, requires multiple products, etc.,
-# then set none=1.
-#
 
-hazelcast=5
-#coherence=
-#gemfire=
-#geode=
-#hadoop=
+hazelcast=3,4,5
 #hazelcast-enterprise=
 #jet=
 #jet-enterprise=
-#kafka=
-#none=1
-#pado=
-#redis=
+#gemfire=
+#geode=
 #snappydata=
 #spark=
+#coherence=
+#pado=

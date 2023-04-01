@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: padogrid-pvc
+  labels:
+    app: padogrid
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi
+  #  storageClassName: ${STORAGE_CLASS_NAME}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: padogrid
+  labels:
+    app: padogrid
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: padogrid
+      role: jupyterlab
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: padogrid
+        role: jupyterlab
+    spec:
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+      - image: docker.io/padogrid/padogrid:latest
+        name: padogrid
+        ports:
+        - name: jupyterlab
+          containerPort: 8888
+        volumeMounts:
+        - mountPath: /opt/padogrid/workspaces
+          name: padogrid-data
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        envFrom:
+        - configMapRef:
+            name: padogrid-configmap
+      volumes:
+      - name: padogrid-data
+        persistentVolumeClaim:
+          claimName: padogrid-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: padogrid-service
+  labels:
+    app: padogrid
+spec:
+  type: LoadBalancer
+  selector:
+    app: padogrid
+    role: jupyterlab
+  ports:
+  - protocol: TCP
+    port: 8888
+    targetPort: jupyterlab

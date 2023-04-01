@@ -1,1 +1,1 @@
-This bundle serves as a template for creating a new Hazelcast bundle. Run `show_bundle bundle-hazelcast-template` to see instructions.
+This bundle deploys Hazelcast using Helm Charts using `kubectl`. It also includes the PadoGrid container for ingesting mock data into the Hazelcast cluster.

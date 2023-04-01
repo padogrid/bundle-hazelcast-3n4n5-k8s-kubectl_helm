@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+. $SCRIPT_DIR/.addonenv.sh
+
+EXECUTABLE="`basename $0`"
+
+if [ "$HELP" == "true" ]; then
+cat <<EOF
+
+NAME
+   $EXECUTABLE - Install and start Kubernetes dashboard
+
+SYNOPSIS
+   $EXECUTABLE [-?]
+
+DESCRIPTION
+   Installs and starts Kubernetes dashboard. Execute this command if your Kubernetes
+   is not equipped with a dashboard. If you are using Minikube, then use its dashboard
+   console instead.
+
+   After running this script, use the following URL to login to the dashboard.
+
+      http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+
+   To disable dashboard expiration, edit deployment and enter 'token-ttl=0' as follows.
+
+    kubectl edit deployment kubernetes-dashboard -n kubernetes-dashboard
+
+    spec:
+      containers:
+      - args:
+        - --auto-generate-certificates
+        - --namespace=kubernetes-dashboard
+        - --token-ttl=0
+
+  To create token for admin-user, execute the following command:
+
+    kubectl -n kubernetes-dashboard create token admin-user
+
+DEFAULT:
+   ./$EXECUTABLE
+
+SEE ALSO
+   https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/
+
+EOF
+exit
+fi
+
+echo ""
+echo "Starting Kubernetes Dashboard..."
+
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+
+pushd $APP_DIR/dashboard > /dev/null
+kubectl apply -f admin-user.yaml
+kubectl apply -f crb.yaml
+popd > /dev/null
+
+kubectl proxy &
+
+cat << EOF
+Proxy started. 
+
+- Enter the following URL in the browser:
+
+    http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+
+- To disable dashboard expiration, edit deployment and enter 'token-ttl=0' as follows.
+
+    kubectl edit deployment kubernetes-dashboard -n kubernetes-dashboard
+
+    spec:
+      containers:
+      - args:
+        - --auto-generate-certificates
+        - --namespace=kubernetes-dashboard
+        - --token-ttl=0
+
+- Create token for admin-user by executing the following command:
+
+    kubectl -n kubernetes-dashboard create token admin-user
+
+EOF
