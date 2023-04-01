@@ -6,11 +6,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>padogrid.addon</groupId>
-	<artifactId>bundle-hazelcast-3n4n5-k8s-oc_helm</artifactId>
+	<artifactId>bundle-hazelcast-3n4n5-k8s-kubectl_helm</artifactId>
 	<packaging>pom</packaging>
         <name>${project.artifactId}</name>
 	<version>1.0.0</version>
-	<description>Hazelcast OpenShift Helm Chart Demo</description>
+	<description>Hazelcast Kubernetes Helm Chart Demo</description>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
