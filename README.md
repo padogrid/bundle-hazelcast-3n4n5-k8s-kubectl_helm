@@ -130,7 +130,7 @@ minikube addons enable ingress
 
 ### 4.2. Other Kubernete Variants
 
-If your Kubernets does not include ingress, then you can install it by running the include `start_ingress` script, which performs the following.
+If your Kubernetes does not include ingress, then you can install it by running the include `start_ingress` script, which performs the following.
 
 - Installs `ingress-nginx` in the `ingress-nginx` namespace
 - Generates self-sign key/certificate using `openssl`
