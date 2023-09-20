@@ -2,6 +2,9 @@
 
 ---
 
+<!-- Platforms -->
+[![Host OS](https://github.com/padogrid/padogrid/wiki/images/padogrid-host-os.drawio.svg)](https://github.com/padogrid/padogrid/wiki/Platform-Host-OS)
+
 # Hazelcast Kubernetes Helm Charts
 
 This bundle deploys Hazelcast using Helm Charts using `kubectl`. It also includes the PadoGrid container for ingesting mock data into the Hazelcast cluster.
