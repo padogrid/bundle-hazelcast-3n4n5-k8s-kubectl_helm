@@ -23,6 +23,9 @@ buildNumber.properties
 # VS Code
 workspace.code-workspace
 
+# Drawio
+.drawio.bkp
+
 # PadoGrid
 /.addonenv.sh
 initenv.sh
