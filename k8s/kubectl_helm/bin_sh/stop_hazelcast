@@ -43,6 +43,9 @@ fi
 if [ -f mc-secret.yaml ]; then
    kubectl delete -f mc-secret.yaml
 fi
+# Delete jar-pod
+kubectl delete -f jar-pod.yaml
+kubectl delete -f jar-pvc.yaml
 popd > /dev/null
 
 # Delete the rest if ALL specified

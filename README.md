@@ -27,44 +27,65 @@ This bundle installs Hazelcast and PadoGrid containers to run on Kubernetes. It 
 - [Helm](https://helm.sh/docs/intro/install/), **helm**
 - `openssl`
 
-## Directory Tree View
+## Bundle Contents
 
 ```console
-kubectl_helm/
-├── bin_sh
-│   ├── build_app
-│   ├── cleanup
-│   ├── create_keystores
-│   ├── list_keystores
-│   ├── login_padogrid_pod
-│   ├── remove_keystores
-│   ├── setenv.sh
-│   ├── start_dashboard
-│   ├── start_hazelcast
-│   ├── start_ingress
-│   ├── start_padogrid
-│   ├── stop_dashboard
-│   ├── stop_hazelcast
-│   ├── stop_ingress
-│   └── stop_padogrid
-├── dashboard
-│   ├── admin-user.yaml
-│   └── crb.yaml
-├── etc
-│   └── hazelcast-enterprise
-│       ├── hz-secret.yaml
-│       └── mc-secret.yaml
-├── hazelcast
-│   ├── mc-ingress-enterprise.yaml
-│   ├── mc-ingress-oss.yaml
-│   └── values.yaml
-└── padogrid
-    ├── padogrid-configmap-enterprise.yaml
-    ├── padogrid-configmap-oss.yaml
-    ├── padogrid-ingress.yaml
-    ├── padogrid-no-pvc.yaml
-    ├── padogrid.yaml
-    └── pv-hostPath.yaml
+k8s
+└── kubectl_helm
+    ├── bin_sh
+    │   ├── build_app
+    │   ├── cleanup
+    │   ├── copy_jar_to_pvc
+    │   ├── create_keystores
+    │   ├── list_keystores
+    │   ├── login_padogrid_pod
+    │   ├── remove_keystores
+    │   ├── setenv.sh
+    │   ├── start_dashboard
+    │   ├── start_hazelcast
+    │   ├── start_ingress
+    │   ├── start_monitor
+    │   ├── start_padogrid
+    │   ├── stop_dashboard
+    │   ├── stop_hazelcast
+    │   ├── stop_ingress
+    │   ├── stop_monitor
+    │   └── stop_padogrid
+    ├── dashboard
+    │   ├── admin-user.yaml
+    │   └── crb.yaml
+    ├── etc
+    │   └── hazelcast-enterprise
+    ├── hazelcast
+    │   ├── hz-secret.yaml
+    │   ├── jar-pod.yaml
+    │   ├── jar-pvc.yaml
+    │   ├── mc-ingress-enterprise.yaml
+    │   ├── mc-ingress-oss.yaml
+    │   ├── mc-secret.yaml
+    │   └── values.yaml
+    ├── monitor
+    │   ├── expose-prometheus.yaml
+    │   ├── prometheus-instance.yaml
+    │   ├── prometheus-operator.yaml
+    │   ├── prometheus-rbac.yaml
+    │   └── service-monitor.yaml
+    └── padogrid
+        ├── padogrid-configmap-enterprise.yaml
+        ├── padogrid-configmap-oss.yaml
+        ├── padogrid-ingress.yaml
+        ├── padogrid-no-pvc.yaml
+        ├── padogrid.yaml
+        └── pv-hostPath.yaml
+```
+
+## Kubernetes Resources
+
+This bundle requires a minimum of 4 CPUs and 8GB memory. For example, you can configure Minikube as follows.
+
+```bash
+minikube config set cpus 4
+minikube config set memory 10240
 ```
 
 ## 1. Build Local Environment
@@ -75,7 +96,7 @@ Run `build_app` which initializes your local environment. This script sets the l
 cd_k8s kubectl_helm/bin_sh
 ./build_app
 ```
-### Changing Container Versions
+### 1.1. Changing Container Versions
 
 The container image versions can be changed as needed in the files shown below.
 
@@ -109,7 +130,7 @@ kubectl config use-context docker-desktop
 
 ## 3. Create Kubernetes Namespace
 
-Let's create the `kubectl-helm` namespace. You can create a project with a different name but make sure to replace `kubectl-helm` with your namespace name throughout this article and set `NAMESPACE` in `bin_sh/setenv.sh`.
+Let's create the **`kubectl-helm`** namespace. You can create a project with a different name but make sure to replace `kubectl-helm` with your namespace name throughout this article and set `NAMESPACE` in `kubectl-helm/bin_sh/setenv.sh`.
 
 ```bash
 # Create namespace
@@ -155,9 +176,66 @@ cd_k8s kubectl_helm/bin_sh
 ./start_ingress -oss
 ```
 
-## 5. Launch Hazelcast Cluster
+## 5. Optional: Launch Prometheus Operator and Grafana
 
-### 5.1. Hazelcast Enterprise
+```bash
+cd_k8s kubectl_helm/bin_sh
+./start_monitor
+```
+
+### 5.1. Minikube
+
+Port-foward Prometheus:
+
+```bash
+kubectl port-forward svc/prometheus-operated 9090:9090
+```
+
+- Prometheus URL: <http://localhost:9090>
+
+Port-foward Grafana:
+
+```bash
+kubectl port-forward svc/grafana 3000:3000
+```
+
+- Grafana URL: <http://localhost:3000>
+
+### 5.2. Docker Desktop Kubernetes
+
+Port-forwarding is not needed for Docker Dekstop Kubernetes.
+
+- Prometheus URL: <http://localhost:9090>
+
+- Grafana URL: <http://localhost:3000>
+
+### 5.3. Grafana: Add Prometheus Data Source
+
+From the Grafana link, configure Prometheus as follows.
+
+- Select *Data Source*
+- Select *Prometheus*
+- From the *Prometheus* page, enter HTTP URL: **`http://prometheus.kubectl-helm.svc.cluster.local:9090`**
+- Select *Save & test*
+
+### 5.4. Prometheus: Monitor Metrics
+
+To view a complete list of metrics:
+
+- All avalable metrics: http://localhost:9090/api/v1/label/name/values
+- Metadata: http://localhost:9090/api/v1/metadata
+- Prometheus specifics: http://localhost:9090/metrics
+- Federated:
+
+```bash
+curl -G http://localhost:9090/federate -d 'match[]={__name__!=""}'
+```
+
+## 6. Launch Hazelcast Cluster
+
+❗️ *To view Hazelcast metrics in Grafana, you must first start the [Prometheus Operator](#5-optional-launch-prometheus-operator-and-grafana) before starting Hazelcast.*
+
+### 6.1. Hazelcast Enterprise
 
 By default, the `start_hazelcast` script launches Hazelcast Enterprise.
 
@@ -166,7 +244,7 @@ cd_k8s kubectl_helm/bin_sh
 ./start_hazelcast
 ```
 
-### 5.2. Hazelcast OSS
+### 6.2. Hazelcast OSS
 
 To run, Hazelcast OSS, specify the `-oss` option as shown below.
 
@@ -175,7 +253,7 @@ cd_k8s kubectl_helm/bin_sh
 ./start_hazelcast -oss
 ```
 
-### 5.3 Security Context
+### 6.3 Security Context
 
 Hazelcast has been configured with `securityContext` enabled. It might fail to start due to the security constraint set by `fsGroup`. Check the StatefulSet events using the describe command as follows.
 
@@ -238,9 +316,9 @@ kubectl-helm-hazelcast-enterprise             ClusterIP      None            <no
 kubectl-helm-hazelcast-enterprise-mancenter   LoadBalancer   172.30.178.54   <pending>     8080:30179/TCP,443:32291/TCP   7m8s
 ```
 
-## 6. Management Center
+## 7. Management Center
 
-### 6.1. HTTPS
+### 7.1. HTTPS
 
 If you ran `start_ingress` as described in [Section 4](#4-optional-install-ingress-for-managment-center-https) then you can access Management Center via HTTPS. The `start_ingress` script creates a self-signed key with `CN=*.demo.com` (see `bin_sh/start_ingress`) and sets an ingress rule to filter the host `mancenter.demo.com` (see `etc/ingress.yaml`) so that you can use `mancenter.demo.com` to access Management Center.
 
@@ -275,12 +353,16 @@ You can now access Management Center via HTTPS.
 
 - URL: <https://mancenter.demo.com>
 
-### 6.2. HTTP - Minikube
+### 7.2. HTTP - Minikube
 
-If you are using `minikube`, then you can expose the management center serive via the `minikube service <service-name> --url` command as follows.
+If you are using `minikube`, then you can expose the management center service via the `minikube service <service-name> --url` command as follows.
 
 ```bash
+# Hazelcast Enterprise
 minikube service kubectl-helm-hazelcast-enterprise-mancenter --url -n kubectl-helm
+
+# Hazelcast OSS
+minikube service kubectl-helm-hazelcast-mancenter --url -n kubectl-helm
 ```
 
 Output:
@@ -292,9 +374,9 @@ http://127.0.0.1:60213
 
 Two (2) URLs reflect internal ports 8080 and 443. Enter one of the URLs in the browser to open Management Center.
 
-### 6.3. HTTP - Docker Desktop Kubernetes
+### 7.3. HTTP - Docker Desktop Kubernetes
 
-If you are using Docker Desktop Kubernetes then the Management Center loadbalancer is exposed to `localhost`.
+If you are using Docker Desktop Kubernetes then the Management Center load balancer is already exposed to `localhost`.
 
 ```bash
 kubectl get svc
@@ -313,18 +395,18 @@ You can access Management Center using `localhost`.
 
 - URL: <http://localhost:8080>
 
-## 6. Launch PadoGrid
+## 8. Launch PadoGrid
 
 ```bash
 cd_k8s kubectl_helm/bin_sh
 ./start_padogrid
 ```
 
-## 7. Login to PadoGrid
+## 9. Login to PadoGrid
 
 You can use the PadoGrid pod as a client to the Hazelcast cluster. There are two (2) ways to login to the PadoGrid pod.
 
-### 7.1. HTTPS - Ingress
+### 9.1. HTTPS - Ingress
 
 If you started `ingress-nginx`, then you can use HTTPS to login to PadoGrid.
 
@@ -342,7 +424,7 @@ padogrid-tls-ingress   nginx   padogrid.demo.com    localhost   80, 443   4m28s
 - **URL:** <https://padogrid.demo.com>
 - **Password:** padogrid
 
-### 7.2. HTTP - External IP
+### 9.2. HTTP - External IP
 
 The PadoGrid container is equipped with JupyterLab. From the browser, login to PadoGrid.
 
@@ -360,7 +442,7 @@ padogrid-service   LoadBalancer   10.103.138.160   localhost     8888:31066/TCP 
 - **URL:** <http://localhost:8888>
 - **Password:** padogrid
 
-### 7.3. HTTP - Minikube
+### 9.3. HTTP - Minikube
 
 If you are using `minikube`, then you can expose the PadoGrid service via the `minikube service <service-name> --url` command as follows.
 
@@ -376,7 +458,9 @@ http://127.0.0.1:54037
 
 Enter the URL in the browser to open PadoGrid JupyterLab.
 
-### 7.4. Shell
+- **Password:** padogrid
+
+### 9.4. Shell
 
 From your shell, run the `login_padogrid_pod` script as follows.
 
@@ -385,7 +469,7 @@ cd_k8s kubectl_helm/bin_sh
 ./login_padogrid_pod
 ```
 
-## 8. Ingest Data
+### 9.5. Ingest Data
 
 The `start_padogrid` script automatically sets the Hazelcast service and the namespace for constructing the DNS address needed by the `perf_test` app to connect to the Hazelcast cluster. This allows us to simply login to the PadoGrid pod and run the `perf_test` app.
 
@@ -420,8 +504,11 @@ The `elibility` and `profile` maps contain blobs. They are meant for carrying ou
 cd_app perf_test/bin_sh
 ./build_app
 
-# After the build, run test_group
+# After the build, run test_group to ingest 'nw' data
 ./test_group -run -prop ../etc/group-factory.properties
+
+# Query 'nw' data. You can use Grafana monitor query metrics.
+./test_group -run -prop ../etc/group-query.properties
 ```
 
 Read the **nw** data:
@@ -431,13 +518,7 @@ Read the **nw** data:
 ./read_cache nw/orders
 ```
 
-Exit from the PadoGrid pod.
-
-```bash
-exit
-```
-
-## 9. Manually Configuring `perf_test`
+## 10. Manually Configuring `perf_test`
 
 The `test_ingestion` script may fail to connect to the Hazelcast cluster if you started the PadoGrid pod before the Hazelcast cluster is started. In that case, you can simply restart PadoGrid. If it still fails even after the Hazelcast cluster has been started first, then you can manually enter the DNS address in the `etc/hazelcast-client-k8s.xml` file as described below.
 
@@ -446,7 +527,7 @@ cd_app perf_test
 vi etc/hazelcast-client-k8s.xml
 ```
 
-### 9.1. Hazelcast Enterprise
+### 10.1. Hazelcast Enterprise
 
 Enter the following in the `etc/hazelcast-client-k8s.xml` file. `kubectl-helm-hazelcast-enterprise` is the service and  `kubectl-helm` is the project name.
 
@@ -456,7 +537,7 @@ Enter the following in the `etc/hazelcast-client-k8s.xml` file. `kubectl-helm-ha
                 </kubernetes>
 ```
 
-### 9.2. Hazelcast OSS
+### 10.2. Hazelcast OSS
 
 Enter the following in the `etc/hazelcast-client-k8s.xml` file. `kubectl-helm-hazelcast` is the service and  `kubectl-helm` is the project name.
 
@@ -466,12 +547,60 @@ Enter the following in the `etc/hazelcast-client-k8s.xml` file. `kubectl-helm-ha
                 </kubernetes>
 ```
 
+## 11. Grafana App
 
-## 10. External Hazelcast Client
+Before we install the Padogrid's `grafana` app, verify the Grafana service name executing the following.
+
+```bash
+kubectl get svc
+```
+
+Output:
+
+```console
+NAME                               TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                        AGE
+grafana                            ClusterIP      10.110.40.76     <none>        3000/TCP                       47m
+...
+```
+
+The host name has the format, `<service-name>.<namespace>.svc.cluster.local`. In our case, it would be `grafana.kubectl-helm.svc.cluster.local`. We will be using this host name shortly.
+
+Let's now install `grafana` app and import the included `perf_test` dashboards to Grafana.
+
+```bash
+# Create the grafana app
+create_app -product hazelcast -app grafana
+```
+
+Edit `setenv.sh` and set the Grafana host.
+
+```bash
+cd_app grafana/bin_sh
+vi setenv.sh
+```
+
+Set the Grafana host name.
+
+```bash
+GRAFANA_HOST=grafana.kubectl-helm.svc.cluster.local
+```
+
+Import the `perf_test`  dashboards.
+
+```bash
+cd_app grafana/bin_sh
+./import_folder
+```
+
+From the browser, look for **padogrid-perf_test** folder.
+
+<http://localhost:3000>
+
+## 12. External Hazelcast Client
 
 You can access the Hazelcast cluster running inside Kubernetes from external clients by properly configuring the endpoints.
 
-### 10.1. Minikube
+### 12.1. Minikube
 
 You can also expose the Hazelcast member service via minikube tunnel and use external clients to connect to the Hazelcast cluster running in Minikube.
 
@@ -516,9 +645,9 @@ cd_app perf_test/bin_sh
 ./test_ingestion -run
 ```
 
-### 10.2. Docker Desktop Kubernetes
+### 12.2. Docker Desktop Kubernetes
 
-Docker Desktop Kubenertes conveniently assigns `localhost` for external IP for loadbalancer services such that Hazelcast clients can connect to `localhost:5701`. Simply create and run `perf_test`.
+Docker Desktop Kubenertes conveniently assigns `localhost` for external IP for load balancer services such that Hazelcast clients can connect to `localhost:5701`. Simply create and run `perf_test`.
 
 Create `perf_test` app:
 
@@ -533,7 +662,16 @@ cd_app perf_test/bin_sh
 ./test_ingestion -run
 ```
 
-## 11. Kubernetes Dashboard
+## 13. Kubernetes Dashboard
+
+### 13.1. Minikube
+
+```bash
+minikube addon enable dashboard
+minikube addon enable metrics-server
+```
+
+### 13.2. Other Kubernete Variants
 
 If your Kubernetes does not include a dashboard, then you can manually install [Kubernetes Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/) or simply run the included `start_dashboard` command.
 
@@ -589,27 +727,28 @@ Once started, follow the output instructions to set `--token-ttl=0`, generate a 
 
 - URL: <http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/>
 
-## 12. Teardown
+## 14. Teardown
 
-### 12.1. Hazelcast Enterprise
+### 14.1. Hazelcast Enterprise
 
 ```bash
 cd_k8s kubectl_helm/bin_sh
 ./cleanup -all
 ```
 
-### 12.2. Hazelcast OSS
+### 14.2. Hazelcast OSS
 
 ```bash
 cd_k8s kubectl_helm/bin_sh
 ./cleanup -all -oss
 ```
 
-## 13. References
+## 15. References
 
 1. Hazelcast Charts, Hazelcast, [https://github.com/hazelcast/charts](https://github.com/hazelcast/charts)
 2. Hazelcast OpenShift Helm Charts, PadoGrid, [https://github.com/padogrid/bundle-hazelcast-3n4n5-k8s-oc_helm](https://github.com/padogrid/bundle-hazelcast-3n4n5-k8s-oc_helm)
 3. Setting up SSL/TLS for Kubernetes Ingress, Peter De Tender, <https://snyk.io/blog/setting-up-ssl-tls-for-kubernetes-ingress/>
+4. How to monitor Kubernetes clusters with the Prometheus Operato, Daniel Olaogun, <https://grafana.com/blog/2023/01/19/how-to-monitor-kubernetes-clusters-with-the-prometheus-operator/>
 
 ---
 

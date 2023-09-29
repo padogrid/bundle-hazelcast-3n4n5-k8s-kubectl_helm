@@ -49,7 +49,6 @@ fi
 
 #kubectl create -f $APP_DIR/padogrid/padogrid-no-pvc.yaml -o yaml 
 #kubectl -f $APP_DIR/padogrid/padogrid-no-pvc.yaml -o yaml | kubectl create -f -
-echo kubectl apply -f $APP_DIR/padogrid/$CONFIGMAP_FILE
 kubectl apply -f $APP_DIR/padogrid/$CONFIGMAP_FILE
 kubectl apply -f $APP_DIR/padogrid/padogrid.yaml
 

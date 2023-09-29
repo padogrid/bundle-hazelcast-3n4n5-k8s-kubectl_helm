@@ -14,8 +14,8 @@ SYNOPSIS
    $EXECUTABLE [-oss] [-all] [-?]
 
 DESCRIPTION
-   Deletes all resrouces including Hazelcast, PadoGrid and Ingress. To delete persistent 
-   claims and 'local-storage' specify the '-all' option.
+   Deletes all resrouces including Hazelcast, PadoGrid, Ingress, Prometheus, and Grafana.
+   To delete persistent claims and 'local-storage' specify the '-all' option.
 
    Note that this command does not delete Kubernetes Dashboard. To delete Kubernetes,
    Dashboard, run './stop_dashboard'.
@@ -32,16 +32,16 @@ exit
 fi
 
 # Delete PadoGrid
-./stop_padogrid $@
+./stop_padogrid "$@"
 
 # Delete Hazelcast
-./stop_hazelcast $@
+./stop_hazelcast "$@"
 
-echo "Deleting routes..."
-kubectl delete route --all=true
+# Delete Prometheus, Grafana
+./stop_monitor "$@"
 
 echo "Deleting ingress..."
-./stop_ingress $@
+./stop_ingress "$@"
 
 echo ""
 echo "Cleanup complete."

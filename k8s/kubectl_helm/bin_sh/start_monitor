@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+. $SCRIPT_DIR/.addonenv.sh
+
+EXECUTABLE="`basename $0`"
+
+if [ "$HELP" == "true" ]; then
+cat <<EOF
+
+NAME
+   $EXECUTABLE - Install and start Prometheus Operator and Grafana
+
+SYNOPSIS
+   $EXECUTABLE [-?]
+
+DESCRIPTION
+   Installs and starts Prometheust Operator and Grafana.
+
+DEFAULT:
+   ./$EXECUTABLE
+
+SEE ALSO
+   https://grafana.com/blog/2023/01/19/how-to-monitor-kubernetes-clusters-with-the-prometheus-operator/
+
+EOF
+exit
+fi
+
+echo ""
+echo "Starting Prometheus Operator and Grafana..."
+
+pushd $APP_DIR/monitor > /dev/null
+# Prometheus operator
+kubectl apply -f prometheus-operator.yaml --force-conflicts=true --server-side=true
+kubectl apply -f prometheus-rbac.yaml
+kubectl apply -f prometheus-instance.yaml
+kubectl apply -f expose-prometheus.yaml
+
+# Kubernetes API
+#kubectl apply -f kubernetes.yaml
+
+# Grafana
+# Wait before starting service-minitor?
+# sleep 5
+kubectl apply -f service-monitor.yaml
+kubectl create deployment grafana --image=docker.io/grafana/grafana:latest
+kubectl expose deployment grafana --port 3000
+popd > /dev/null
+
+cat << EOF
+
+- Prometheus port forwarding:
+
+    kubectl port-forward svc/prometheus-operated 9090:9090
+    
+    URL: http://localhost:9090
+
+- Grafana port forarding:
+
+    kubectl port-forward svc/grafana 3000:3000
+
+    URL: http://localhost:3000
+
+- Grafana data source - Prometheus
+
+  - Get the node IP from the output of the above command
+  - Select Data Source
+  - Select Prometheus
+  - From the Prometheus page, enter HTTP URL: http://prometheus.default.svc.cluster.local:9090
+  - Select Save & Test
+
+EOF

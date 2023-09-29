@@ -1,3 +1,28 @@
+#volumes:
+#- name: custom-dir
+#  emptyDir: {}
+volumes:
+- name: custom-dir
+  persistentVolumeClaim:
+    claimName: jar-pvc
+
+#initContainers:
+#  - name: padogrid
+#    image: padogrid/padogrid-base
+#    securityContext:
+#      runAsUser: 0
+#    command:
+#    - "/opt/padogrid/products/padogrid_0.9.28/hazelcast/plugins/v5/*"
+#    - "/data/custom/"
+#    volumeMounts:
+#    - name: custom-dir
+#      mountPath: "/data/custom"
+
+# customVolume is the configuration for any volume mounted as '/data/custom/' (e.g. to mount a volume with custom JARs)
+customVolume:
+  persistentVolumeClaim:
+    claimName: jar-pvc
+
 # Security Context properties
 securityContext:
   # enabled is a flag to enable Security Context
@@ -17,6 +42,12 @@ metrics:
     annotations:
       prometheus.io/path: /metrics
       prometheus.io/scrape: "true"
+  serviceMonitor:
+    enabled: true
+    namespace: ""
+    labels: {}
+    # The interval at which metrics should be scraped
+    interval: 5s
 
 hazelcast:
   javaOpts: -Dhazelcast.jmx=true -Dhazelcast.shutdownhook.enabled=true -Dhazelcast.graceful.shutdown.max.wait=600 -Dhazelcast.shutdownhook.policy=GRACEFUL
@@ -24,6 +55,15 @@ hazelcast:
     hazelcast:
       properties:
         hazelcast.phone.home.enabled: false
+      jet:
+        enabled: true
+        resource-upload-enabled: true
+      management-center:
+        scripting-enabled: true
+      user-code-deployment:
+        enabled: true
+        class-cache-mode: ETERNAL
+        provider-mode: LOCAL_AND_CACHED_CLASSES
       network:
         rest-api:
           enabled: true
@@ -40,6 +80,32 @@ hazelcast:
               enabled: true
             DATA:
               enabled: true
+
+      # Indexes for nw data
+      map:
+        nw/customers:
+          indexes:
+            - name: country
+              type: HASH
+              attributes:
+                - "country"
+        nw/orders:
+          indexes:
+            - name: freight
+              type: SORTED
+              attributes:
+                - "freight"
+            - name: shipvia
+              type: BITMAP
+              attributes:
+                - "shipVia"
+
+      # padogrid serialization
+      serialization:
+       portable-version: 1
+       portable-factories:
+          - factory-id: 10000
+            class-name: org.hazelcast.addon.hql.impl.PortableFactoryImpl
 
 mancenter:
   javaOpts: -Dhazelcast.mc.prometheusExporter.enabled=true -Dhazelcast.mc.jmx.enabled=true

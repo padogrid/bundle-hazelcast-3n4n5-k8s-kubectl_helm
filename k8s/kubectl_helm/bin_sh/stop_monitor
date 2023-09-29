@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+. $SCRIPT_DIR/.addonenv.sh
+
+EXECUTABLE="`basename $0`"
+
+if [ "$HELP" == "true" ]; then
+cat <<EOF
+
+NAME
+   $EXECUTABLE - Stop Prometheus Opeartor and Grafana, and delete all associated artifacts
+
+SYNOPSIS
+   $EXECUTABLE [-?]
+
+DESCRIPTION
+   Stops Prometheus Opeartor and Grafana, and delete all associated artifacts.
+
+OPTIONS
+
+DEFAULT:
+   ./$EXECUTABLE
+
+EOF
+exit
+fi
+
+echo "Stopping Prometheus Operator and Grafana..."
+pushd $APP_DIR/monitor > /dev/null
+# Prometheus operator
+kubectl delete -f prometheus-operator.yaml
+kubectl delete -f prometheus-rbac.yaml
+kubectl delete -f prometheus-instance.yaml
+kubectl delete -f expose-prometheus.yaml
+
+# Kubernetes API
+#kubectl delete -f kubernetes.yaml
+
+# Grafana
+kubectl delete -f service-monitor.yaml
+kubectl delete deployment grafana
+kubectl delete svc grafana
+popd > /dev/null

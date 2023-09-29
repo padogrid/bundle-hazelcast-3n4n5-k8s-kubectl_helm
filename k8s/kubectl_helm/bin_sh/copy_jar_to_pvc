@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+. $SCRIPT_DIR/.addonenv.sh
+
+EXECUTABLE="`basename $0`"
+
+if [ "$HELP" == "true" ]; then
+cat <<EOF
+
+NAME
+   $EXECUTABLE - Copy perf_test jars to 'jar-pvc', which will be mounted by Hazelcast pods.
+
+SYNOPSIS
+   $EXECUTABLE [hazelcast_version] [-?]
+
+DESCRIPTION
+   Copies perf_test jars to jar-pvc, which will be mounted by Hazelcast pods.
+
+OPTIONS
+   hazelcast_version
+             Hazelcast image version. If unspecified, then the latest Hazelcast image version is
+             used. This must be same as the Hazelcast version number specified for the 
+             'start_hazelcast' command.
+
+DEFAULT:
+   ./$EXECUTABLE
+
+SEE ALSO
+   https://github.com/hazelcast/charts
+
+EOF
+exit
+fi
+
+if [ "$1" != "" ] && [ "$1" != "-oss" ]; then
+   VERSION=$1 
+elif [ "$2" != "" ]; then
+   VERSION=$2 
+else
+   VERSION=latest
+fi
+
+if [ $VERSION == "latest" ]; then
+   HAZELCAST_MAJOR_VERSION_NUMBER="5"
+elif [[ "$VERSION" == "4"* ]]; then
+   HAZELCAST_MAJOR_VERSION_NUMBER="4"
+elif [[ "$VERSION" == "3"* ]]; then
+   HAZELCAST_MAJOR_VERSION_NUMBER="3"
+else
+   HAZELCAST_MAJOR_VERSION_NUMBER="5"
+fi
+
+pushd $APP_DIR/hazelcast > /dev/null
+
+echo "Starting jar-pod for copying perf_test jar files to jar-pvc..."
+# Start the jar pod to copy the perf_test required jar files to the PVC (jar-pvc)
+# which will be mounted by Hazelcast pods.
+kubectl apply -f jar-pvc.yaml
+kubectl apply -f jar-pod.yaml
+POD_STATUS=$(kubectl get pods jar-pod -o jsonpath="{.status.phase}")
+echo POD_STATUS=$POD_STATUS
+while [ "$POD_STATUS" != "Running" ]; do
+   sleep 1
+   POD_STATUS=$(kubectl get pods jar-pod -o jsonpath="{.status.phase}")
+   echo POD_STATUS=$POD_STATUS
+done
+if [ "$POD_STATUS" == "Running" ]; then
+   kubectl cp $PADOGRID_HOME/hazelcast/lib/v$HAZELCAST_MAJOR_VERSION_NUMBER/* jar-pod:/data/custom/ > /dev/null 2>&1
+   kubectl cp $PADOGRID_HOME/hazelcast/plugins/v$HAZELCAST_MAJOR_VERSION_NUMBER/* jar-pod:/data/custom/ > /dev/null 2>&1
+   kubectl exec -it jar-pod -- sh -c "touch /data/custom/complete.txt" > /dev/null 2>&1
+fi
+echo "Copied perf_test jar files to jar-pvc."
+echo "Deleting jar-pod..."
+kubectl delete -f jar-pod.yaml
+
+popd > /dev/null

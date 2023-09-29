@@ -8,14 +8,18 @@ if [ "$HELP" == "true" ]; then
 cat <<EOF
 
 NAME
-   $EXECUTABLE - Build a Hazelcast OpenShift Operator environment
+   $EXECUTABLE - Build a Hazelcast Kubernetes environment
 
 SYNOPSIS
    $EXECUTABLE [-?]
 
 DESCRIPTION
-   Builds a Hazelcast OpenShift Operator environment by downloading all the necessary files and making adjustments
-   to the downloaded files. 
+   Builds a Hazelcast Kubernetes environment by downloading all the necessary files and making adjustments
+   to the downloaded files.
+
+   For OpenShift, please refer to the following bundle.
+
+   OpenShift bundle: https://github.com/padogrid/bundle-hazelcast-3n4n5-k8s-oc_helm
 
 DEFAULT:
    ./$EXECUTABLE

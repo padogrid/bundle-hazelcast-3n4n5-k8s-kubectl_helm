@@ -33,14 +33,14 @@ EXAMPLES:
    # Start the latest Hazelcast OSS 
    ./$EXECUTABLE -oss
 
-   # Start Hazelcast OSS version 5.2.1
-   ./$EXECUTABLE -oss 5.2.1
+   # Start Hazelcast OSS version 5.3.2
+   ./$EXECUTABLE -oss 5.3.2
 
    # Start the latest Hazelcast Enterprise
    ./$EXECUTABLE
 
-   # Start Hazelcast Enterprise 5.2.1
-   ./$EXECUTABLE 5.2.1
+   # Start Hazelcast Enterprise 5.3.2
+   ./$EXECUTABLE 5.3.2
 
 SEE ALSO
    https://github.com/hazelcast/charts
@@ -62,6 +62,10 @@ HELM_OPTS="--values=values.yaml \
    --set service.type=LoadBalancer \
    --set mancenter.service.type=LoadBalancer
 "
+
+# Start the jar pod to copy the perf_test required jar files to the PVC (jar-pvc)
+# which will be mounted by Hazelcast pods.
+./copy_jar_to_pvc $VERSION
 
 pushd $APP_DIR/hazelcast > /dev/null
 

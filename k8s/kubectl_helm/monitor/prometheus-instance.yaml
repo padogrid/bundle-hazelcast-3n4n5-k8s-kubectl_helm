@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+spec:
+  serviceAccountName: prometheus
+  serviceMonitorSelector: {}
+  #serviceMonitorSelector:
+    #matchLabels:
+    #  app.kubernetes.io/name: hazelcast-enterprise
+  resources:
+    requests:
+      memory: 300Mi
