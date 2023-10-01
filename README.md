@@ -183,7 +183,7 @@ cd_k8s kubectl_helm/bin_sh
 ./start_monitor
 ```
 
-### 5.1. Minikube
+### 5.1. Minikube, Docker Desktop Kubernetes
 
 Port-foward Prometheus:
 
@@ -201,15 +201,7 @@ kubectl port-forward svc/grafana 3000:3000
 
 - Grafana URL: <http://localhost:3000>
 
-### 5.2. Docker Desktop Kubernetes
-
-Port-forwarding is not needed for Docker Dekstop Kubernetes.
-
-- Prometheus URL: <http://localhost:9090>
-
-- Grafana URL: <http://localhost:3000>
-
-### 5.3. Grafana: Add Prometheus Data Source
+### 5.2. Grafana: Add Prometheus Data Source
 
 From the Grafana link, configure Prometheus as follows.
 
@@ -218,7 +210,7 @@ From the Grafana link, configure Prometheus as follows.
 - From the *Prometheus* page, enter HTTP URL: **`http://prometheus.kubectl-helm.svc.cluster.local:9090`**
 - Select *Save & test*
 
-### 5.4. Prometheus: Monitor Metrics
+### 5.3. Prometheus: Monitor Metrics
 
 To view a complete list of metrics:
 
@@ -511,6 +503,63 @@ cd_app perf_test/bin_sh
 ./test_group -run -prop ../etc/group-query.properties
 ```
 
+The `group-query.properties` will fail since the mappting tables have not been created. You can create them from the Management Center or as follows.
+
+First, get the cluster IP address.
+
+```bash
+env|grep HAZELCAST.*5701_TCP_ADDR
+```
+
+Output:
+
+```console
+KUBECTL_HELM_HAZELCAST_ENTERPRISE_PORT_5701_TCP_ADDR=10.96.59.28
+```
+
+Run `hz-cli` with the cluster IP as follows.
+
+```bash
+hz-cli -t dev@10.96.59.28:5701 sql
+```
+
+Hazelcast SQL Console: Copy/paste the mapping table outputs as follows.
+
+```console
+Connected to Hazelcast 5.3.2 at [10.1.1.97]:5701 (+2 more)
+Type 'help' for instructions
+sql> CREATE OR REPLACE EXTERNAL MAPPING "hazelcast"."public"."nw/customers" EXTERNAL NAME "nw/customers"
+TYPE "IMap"
+OPTIONS (
+  'keyFormat'='java',
+  'keyJavaClass'='java.lang.String',
+  'valueFormat'='portable',
+  'valuePortableFactoryId'='1',
+  'valuePortableClassId'='101',
+  'valuePortableClassVersion'='1'
+);
+OK
+sql> CREATE OR REPLACE EXTERNAL MAPPING "hazelcast"."public"."nw/orders" EXTERNAL NAME "nw/orders"
+TYPE "IMap"
+OPTIONS (
+  'keyFormat'='java',
+  'keyJavaClass'='java.lang.String',
+  'valueFormat'='portable',
+  'valuePortableFactoryId'='1',
+  'valuePortableClassId'='109',
+  'valuePortableClassVersion'='1'
+);
+OK
+sql> exit;
+```
+
+Now, run the query test again.
+
+```bash
+./test_group -run -prop ../etc/group-query.properties
+```
+
+
 Read the **nw** data:
 
 ```bash
@@ -563,7 +612,7 @@ grafana                            ClusterIP      10.110.40.76     <none>       
 ...
 ```
 
-The host name has the format, `<service-name>.<namespace>.svc.cluster.local`. In our case, it would be `grafana.kubectl-helm.svc.cluster.local`. We will be using this host name shortly.
+The host name has the format, `<service-name>.<namespace>.svc.cluster.local`. In our case, it would be **`grafana.kubectl-helm.svc.cluster.local`**. We will be using this host name shortly.
 
 Let's now install `grafana` app and import the included `perf_test` dashboards to Grafana.
 
@@ -589,7 +638,7 @@ Import the `perf_test`  dashboards.
 
 ```bash
 cd_app grafana/bin_sh
-./import_folder
+./import_folder -all
 ```
 
 From the browser, look for **padogrid-perf_test** folder.

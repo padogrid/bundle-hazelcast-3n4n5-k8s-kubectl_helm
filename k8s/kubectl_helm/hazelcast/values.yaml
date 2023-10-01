@@ -1,3 +1,7 @@
+service:
+  labels:
+    app: kube-prometheus-stack-prometheus
+
 #volumes:
 #- name: custom-dir
 #  emptyDir: {}
@@ -44,7 +48,7 @@ metrics:
       prometheus.io/scrape: "true"
   serviceMonitor:
     enabled: true
-    namespace: ""
+    namespace: "kubectl-helm"
     labels: {}
     # The interval at which metrics should be scraped
     interval: 5s
