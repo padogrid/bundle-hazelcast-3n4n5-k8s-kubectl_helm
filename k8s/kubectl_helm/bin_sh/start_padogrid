@@ -38,7 +38,6 @@ EOF
 exit
 fi
 
-#HAZELCAST_SERVICE="$(kubectl get svc | grep 5701 | awk '{ print $1 }')"
 HAZELCAST_ENTERPRISE_SERVICES="$(kubectl get svc | grep hazelcast-enterprise)"
 
 if [ "$HAZELCAST_ENTERPRISE_SERVICES" != "" ]; then
@@ -47,8 +46,6 @@ else
   CONFIGMAP_FILE="padogrid-configmap-oss.yaml"
 fi
 
-#kubectl create -f $APP_DIR/padogrid/padogrid-no-pvc.yaml -o yaml 
-#kubectl -f $APP_DIR/padogrid/padogrid-no-pvc.yaml -o yaml | kubectl create -f -
 kubectl apply -f $APP_DIR/padogrid/$CONFIGMAP_FILE
 kubectl apply -f $APP_DIR/padogrid/padogrid.yaml
 

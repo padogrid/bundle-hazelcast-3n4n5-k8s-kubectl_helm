@@ -431,6 +431,12 @@ NAME               TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)        
 padogrid-service   LoadBalancer   10.103.138.160   localhost     8888:31066/TCP   5m46s
 ```
 
+If the external IP is not available, then you need to enable port-forwarding as follows.
+
+```bash
+kubectl port-forward svc/padogrid-service 8888:8888
+```
+
 - **URL:** <http://localhost:8888>
 - **Password:** padogrid
 
@@ -598,7 +604,9 @@ Enter the following in the `etc/hazelcast-client-k8s.xml` file. `kubectl-helm-ha
 
 ## 11. Grafana App
 
-Before we install the Padogrid's `grafana` app, verify the Grafana service name executing the following.
+### 11.1. Install Grafana App
+
+Before we install the Padogrid's `grafana` app, verify the Grafana service name by executing the following.
 
 ```bash
 kubectl get svc
@@ -614,12 +622,14 @@ grafana                            ClusterIP      10.110.40.76     <none>       
 
 The host name has the format, `<service-name>.<namespace>.svc.cluster.local`. In our case, it would be **`grafana.kubectl-helm.svc.cluster.local`**. We will be using this host name shortly.
 
-Let's now install `grafana` app and import the included `perf_test` dashboards to Grafana.
+Let's now install `grafana` app and import the included dashboards to Grafana.
 
 ```bash
 # Create the grafana app
 create_app -product hazelcast -app grafana
 ```
+
+### 11.2. Configure Grafana App
 
 Edit `setenv.sh` and set the Grafana host.
 
@@ -634,16 +644,58 @@ Set the Grafana host name.
 GRAFANA_HOST=grafana.kubectl-helm.svc.cluster.local
 ```
 
-Import the `perf_test`  dashboards.
+There are two (2) folders included in the PadoGrid distribution as follows.
+
+- **padogrid-perf_test** - This folder includes PadoGrid `perf_test` specific dashboards.
+
+- **Hazelecast** - This folder includes a comprehensive set of Hazelcast dashboards that resemble the Hazelcast Management Center (available in PadoGrid 0.9.30+).
+
+To use the **Hazelcast** folder, follow the steps below.
+
+1. Update the Hazelcast cluster name. The dashboards support monitoring multiple Hazelcast clusters. By default, it is preconfigured with the cluster name, `hazelcast`. The dashboards filter the `job` attribute of Prometheus metrics to determine the cluster names. This attribute value can be viewed by executing the following `curl` command.
+
+```bash
+curl -sG http://prometheus.kubectl-helm.svc.cluster.local:9090/federate -d 'match[]={__name__!=""}'  | grep com_hazelcast_Metrics_nodes
+```
+
+Output:
+
+...
+
+com_hazelcast_Metrics_nodes{container="kubectl-helm-hazelcast-enterprise",endpoint="metrics",exported_instance="youthful_satoshi",instance="10.1.1.148:8080",**job="kubectl-helm-hazelcast-enterprise-metrics"**,namespace="kubectl-helm",pod="kubectl-helm-hazelcast-enterprise-2",prefix="raft",service="kubectl-helm-hazelcast-enterprise-metrics",prometheus="kubectl-helm/prometheus",prometheus_replica="prometheus-prometheus-0"} 0 1697026561551
+
+In the above output, we see the value of `job` is `kubectl-helm-hazelcast-enterprise-metrics`. Your output may have a different name. Now, run `update_cluster_templating` with your `job` value. The following uses the `job` value shown in the above output.
+
+```bash
+./update_cluster_templating -cluster kubectl-helm-hazelcast-enterprise-metrics
+```
+
+### 11.3. Import Dashboards
+
+You can import folders individually or all at once. Let's import them all as follows.
 
 ```bash
 cd_app grafana/bin_sh
 ./import_folder -all
 ```
 
-From the browser, look for **padogrid-perf_test** folder.
+Grafana URL: <http://localhost:3000>
 
-<http://localhost:3000>
+### 11.4. Update Prometheus Data Source
+
+Finally, from the Grafana console, create a Prometheus data source as follows.
+
+1. From the *Home* pane, select *Connections/Data sources*.
+2. From the *Data sources* pane, select *Prometheus*.
+3. From the *Prometheus* pane, update the following field.
+   - Prometheus server URL: **http://prometheus.kubectl-helm.svc.cluster.local:9090**
+4. At the bottom of the *Prometheus* pane, select the *Save & test* button.
+
+Now, you are ready to view the dashboards. 
+
+1. From the *Home* pane, select *Dashboards*
+2. From the *Dashboards* pane, select **Hazelcast/00Main** to view the main dashboard for monitoring the Hazelcast cluster.
+3. From the *Dashboards* pane, select any of the *padogrid-perf_test* dashboards to monitor `perf_test` specific metrics.
 
 ## 12. External Hazelcast Client
 

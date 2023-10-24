@@ -26,10 +26,14 @@ EOF
 exit
 fi
 
-echo "Deleting PadoGrid..."
-kubectl delete all,configmap -l app=padogrid
-if [ "$ALL" == "true" ]; then
-   echo "Deleting PadoGrid pvc, pv, and local-storage..."
-   kubectl delete -f $APP_DIR/padogrid/pv-hostPath.yaml > /dev/null 2>&1
-   kubectl delete pvc padogrid-pvc
+HAZELCAST_ENTERPRISE_SERVICES="$(kubectl get svc | grep hazelcast-enterprise)"
+
+if [ "$HAZELCAST_ENTERPRISE_SERVICES" != "" ]; then
+  CONFIGMAP_FILE="padogrid-configmap-enterprise.yaml"
+else
+  CONFIGMAP_FILE="padogrid-configmap-oss.yaml"
 fi
+
+echo "Deleting PadoGrid..."
+kubectl delete -f $APP_DIR/padogrid/$CONFIGMAP_FILE
+kubectl delete -f $APP_DIR/padogrid/padogrid.yaml
