@@ -62,6 +62,8 @@ spec:
         ports:
         - name: jupyterlab
           containerPort: 8888
+        - name: playground
+          containerPort: 5006
         volumeMounts:
         - mountPath: /opt/padogrid/workspaces
           name: padogrid-data
@@ -93,5 +95,10 @@ spec:
     role: jupyterlab
   ports:
   - protocol: TCP
+    name: jupyterlab 
     port: 8888
     targetPort: jupyterlab
+  - protocol: TCP
+    name: playground
+    port: 5006
+    targetPort: playground

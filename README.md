@@ -460,7 +460,7 @@ Enter the URL in the browser to open PadoGrid JupyterLab.
 
 ### 9.4. Shell
 
-From your shell, run the `login_padogrid_pod` script as follows.
+From your host OS shell, run the `login_padogrid_pod` script as follows.
 
 ```bash
 cd_k8s kubectl_helm/bin_sh
@@ -602,9 +602,39 @@ Enter the following in the `etc/hazelcast-client-k8s.xml` file. `kubectl-helm-ha
                 </kubernetes>
 ```
 
-## 11. Grafana App
+## 11. Hazelcast Playground
 
-### 11.1. Install Grafana App
+In addition to `perf_test`, you can optionally install the [Hazelcast Playground](https://github.com/padogrid/bundle-hazelcast-5-playground-python) bundle to ingest data in various data structures. Hazelcast Playground is a GUI tool for testing Hazelcast data structures.
+
+### 11.1. Install Hazelcast PLayground
+
+```bash
+install_bundle -checkout bundle-hazelcast-5-playground-python
+switch_workspace bundle-hazelcast-5-playground-python
+cd_app playground
+pip -r requirements.txt
+```
+
+### 11.2. Start Hazelcast Playground
+
+```bash
+cd_app playground/bin_sh
+./start_playground
+```
+
+### 11.3. Minikube, Docker Desktop Kubernetes
+
+Port-forward Hazelcast Playground:
+
+```bash
+kubectl port-forward svc/kubectl-helm-hazelcast-enterprise 5006:5006
+```
+
+- Hazelcast Playground URL: <http://localhost:5006/HazelcastPlayground>
+
+## 12. Grafana App
+
+### 12.1. Install Grafana App
 
 Before we install the Padogrid's `grafana` app, verify the Grafana service name by executing the following.
 
@@ -629,7 +659,7 @@ Let's now install `grafana` app and import the included dashboards to Grafana.
 create_app -product hazelcast -app grafana
 ```
 
-### 11.2. Configure Grafana App
+### 12.2. Configure Grafana App
 
 Edit `setenv.sh` and set the Grafana host.
 
@@ -670,7 +700,7 @@ In the above output, we see the value of `job` is `kubectl-helm-hazelcast-enterp
 ./update_cluster_templating -cluster kubectl-helm-hazelcast-enterprise-metrics
 ```
 
-### 11.3. Import Dashboards
+### 12.3. Import Dashboards
 
 You can import folders individually or all at once. Let's import them all as follows.
 
@@ -681,7 +711,7 @@ cd_app grafana/bin_sh
 
 Grafana URL: <http://localhost:3000>
 
-### 11.4. Update Prometheus Data Source
+### 12.4. Update Prometheus Data Source
 
 Finally, from the Grafana console, create a Prometheus data source as follows.
 
@@ -697,11 +727,11 @@ Now, you are ready to view the dashboards.
 2. From the *Dashboards* pane, select **Hazelcast/00Main** to view the main dashboard for monitoring the Hazelcast cluster.
 3. From the *Dashboards* pane, select any of the *padogrid-perf_test* dashboards to monitor `perf_test` specific metrics.
 
-## 12. External Hazelcast Client
+## 13. External Hazelcast Clients
 
 You can access the Hazelcast cluster running inside Kubernetes from external clients by properly configuring the endpoints.
 
-### 12.1. Minikube
+### 13.1. Minikube
 
 You can also expose the Hazelcast member service via minikube tunnel and use external clients to connect to the Hazelcast cluster running in Minikube.
 
@@ -746,9 +776,13 @@ cd_app perf_test/bin_sh
 ./test_ingestion -run
 ```
 
-### 12.2. Docker Desktop Kubernetes
+### 13.2. Docker Desktop Kubernetes
 
-Docker Desktop Kubenertes conveniently assigns `localhost` for external IP for load balancer services such that Hazelcast clients can connect to `localhost:5701`. Simply create and run `perf_test`.
+Port-foward Hazelcast:
+
+```bash
+kubectl port-forward svc/kubectl-helm-hazelcast-enterprise 5701:5701
+```
 
 Create `perf_test` app:
 
@@ -763,16 +797,16 @@ cd_app perf_test/bin_sh
 ./test_ingestion -run
 ```
 
-## 13. Kubernetes Dashboard
+## 14. Kubernetes Dashboard
 
-### 13.1. Minikube
+### 14.1. Minikube
 
 ```bash
 minikube addon enable dashboard
 minikube addon enable metrics-server
 ```
 
-### 13.2. Other Kubernete Variants
+### 14.2. Other Kubernete Variants
 
 If your Kubernetes does not include a dashboard, then you can manually install [Kubernetes Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/) or simply run the included `start_dashboard` command.
 
@@ -828,28 +862,29 @@ Once started, follow the output instructions to set `--token-ttl=0`, generate a 
 
 - URL: <http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/>
 
-## 14. Teardown
+## 15. Teardown
 
-### 14.1. Hazelcast Enterprise
+### 15.1. Hazelcast Enterprise
 
 ```bash
 cd_k8s kubectl_helm/bin_sh
 ./cleanup -all
 ```
 
-### 14.2. Hazelcast OSS
+### 15.2. Hazelcast OSS
 
 ```bash
 cd_k8s kubectl_helm/bin_sh
 ./cleanup -all -oss
 ```
 
-## 15. References
+## 16. References
 
 1. Hazelcast Charts, Hazelcast, [https://github.com/hazelcast/charts](https://github.com/hazelcast/charts)
 2. Hazelcast OpenShift Helm Charts, PadoGrid, [https://github.com/padogrid/bundle-hazelcast-3n4n5-k8s-oc_helm](https://github.com/padogrid/bundle-hazelcast-3n4n5-k8s-oc_helm)
 3. Setting up SSL/TLS for Kubernetes Ingress, Peter De Tender, <https://snyk.io/blog/setting-up-ssl-tls-for-kubernetes-ingress/>
 4. How to monitor Kubernetes clusters with the Prometheus Operato, Daniel Olaogun, <https://grafana.com/blog/2023/01/19/how-to-monitor-kubernetes-clusters-with-the-prometheus-operator/>
+5. Prometheus Operator, GitHub, <https://github.com/prometheus-operator/prometheus-operator>
 
 ---
 
