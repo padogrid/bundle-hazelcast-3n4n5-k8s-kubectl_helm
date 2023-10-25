@@ -23,9 +23,10 @@ This bundle installs Hazelcast and PadoGrid containers to run on Kubernetes. It 
 
 ## Required Software
 
+- PadoGrid 0.9.30+
 - Kubernetes CLI, **kubectl**
 - [Helm](https://helm.sh/docs/intro/install/), **helm**
-- `openssl`
+- `openssl` (optional)
 
 ## Bundle Contents
 
@@ -682,7 +683,8 @@ There are two (2) folders included in the PadoGrid distribution as follows.
 
 To use the **Hazelcast** folder, follow the steps below.
 
-1. Update the Hazelcast cluster name. The dashboards support monitoring multiple Hazelcast clusters. By default, it is preconfigured with the cluster name, `hazelcast`. The dashboards filter the `job` attribute of Prometheus metrics to determine the cluster names. This attribute value can be viewed by executing the following `curl` command.
+1. Update the Prometheus label and value for filtering Hazelcast clusters. By default, the dashboards are preconfigured with the Promtheus label, 'job' and the value, `hazelcast`. Let's replace the label with 'namespace' so that it is more appropriate for discoverying cluster members in Kubernetes. We can view all the available labels by executing the following `curl` command.
+The dashboards support monitoring multiple Hazelcast clusters. 
 
 ```bash
 curl -sG http://prometheus.kubectl-helm.svc.cluster.local:9090/federate -d 'match[]={__name__!=""}'  | grep com_hazelcast_Metrics_nodes
@@ -692,13 +694,15 @@ Output:
 
 ...
 
-com_hazelcast_Metrics_nodes{container="kubectl-helm-hazelcast-enterprise",endpoint="metrics",exported_instance="youthful_satoshi",instance="10.1.1.148:8080",**job="kubectl-helm-hazelcast-enterprise-metrics"**,namespace="kubectl-helm",pod="kubectl-helm-hazelcast-enterprise-2",prefix="raft",service="kubectl-helm-hazelcast-enterprise-metrics",prometheus="kubectl-helm/prometheus",prometheus_replica="prometheus-prometheus-0"} 0 1697026561551
-
-In the above output, we see the value of `job` is `kubectl-helm-hazelcast-enterprise-metrics`. Your output may have a different name. Now, run `update_cluster_templating` with your `job` value. The following uses the `job` value shown in the above output.
+com_hazelcast_Metrics_nodes{container="kubectl-helm-hazelcast-enterprise",endpoint="metrics",exported_instance="youthful_satoshi",instance="10.1.1.148:8080",job="kubectl-helm-hazelcast-enterprise-metrics",**namespace="kubectl-helm"**,pod="kubectl-helm-hazelcast-enterprise-2",prefix="raft",service="kubectl-helm-hazelcast-enterprise-metrics",prometheus="kubectl-helm/prometheus",prometheus_replica="prometheus-prometheus-0"} 0 1697026561551
+ 
+In the above output, we see the value of `namespace` is `kubectl-helm`. Now, run `update_cluster_templating` to replace the label and its value.
 
 ```bash
-./update_cluster_templating -cluster kubectl-helm-hazelcast-enterprise-metrics
+./update_cluster_templating -label namespace -clusters kubectl-helm
 ```
+
+✏️  Note that the `-clusters` option takes a comma-separated list of cluster names for monitoring multiple clusters. For example, if you have Hazelcast clusters running in different namespaces, then you would list their namespace values separated by comma for the `-clusters` option. 
 
 ### 12.3. Import Dashboards
 
@@ -869,6 +873,7 @@ Once started, follow the output instructions to set `--token-ttl=0`, generate a 
 ```bash
 cd_k8s kubectl_helm/bin_sh
 ./cleanup -all
+kubectl delete namespaces kubectl-helm
 ```
 
 ### 15.2. Hazelcast OSS
@@ -876,6 +881,7 @@ cd_k8s kubectl_helm/bin_sh
 ```bash
 cd_k8s kubectl_helm/bin_sh
 ./cleanup -all -oss
+kubectl delete namespaces kubectl-helm
 ```
 
 ## 16. References
