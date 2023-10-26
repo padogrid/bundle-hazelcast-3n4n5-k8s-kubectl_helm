@@ -633,6 +633,12 @@ kubectl port-forward svc/padogrid-service 5006:5006
 
 - Hazelcast Playground URL: <http://localhost:5006/HazelcastPlayground>
 
+Enter the endpoint that applies to your environment from the list below in the *Cluster* text field to connect to the Hazelcast cluster.
+
+- Cluster Connection Endpoints
+  - Hazelcast Enterprise: `dev@kubectl-helm-hazelcast-enterprise:5701`
+  - Hazelcast OSS: `dev@kubectl-helm-hazelcast:5701`
+
 ## 12. Grafana App
 
 ### 12.1. Install Grafana App
