@@ -628,7 +628,7 @@ cd_app playground/bin_sh
 Port-forward Hazelcast Playground:
 
 ```bash
-kubectl port-forward svc/kubectl-helm-hazelcast-enterprise 5006:5006
+kubectl port-forward svc/padogrid-service 5006:5006
 ```
 
 - Hazelcast Playground URL: <http://localhost:5006/HazelcastPlayground>
