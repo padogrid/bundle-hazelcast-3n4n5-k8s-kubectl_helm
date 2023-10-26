@@ -613,7 +613,7 @@ In addition to `perf_test`, you can optionally install the [Hazelcast Playground
 install_bundle -checkout bundle-hazelcast-5-playground-python
 switch_workspace bundle-hazelcast-5-playground-python
 cd_app playground
-pip -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 11.2. Start Hazelcast Playground
@@ -672,7 +672,7 @@ vi setenv.sh
 Set the Grafana host name.
 
 ```bash
-GRAFANA_HOST=grafana.kubectl-helm.svc.cluster.local
+GRAFANA_HOST="grafana.kubectl-helm.svc.cluster.local"
 ```
 
 There are two (2) folders included in the PadoGrid distribution as follows.
