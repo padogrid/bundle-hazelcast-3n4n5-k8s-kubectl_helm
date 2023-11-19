@@ -510,7 +510,7 @@ cd_app perf_test/bin_sh
 ./test_group -run -prop ../etc/group-query.properties
 ```
 
-The `group-query.properties` will fail since the mappting tables have not been created. You can create them from the Management Center or as follows.
+The `group-query.properties` will fail since the mapping tables have not been created. You can create them from the Management Center or as follows.
 
 First, get the cluster IP address.
 
@@ -659,7 +659,7 @@ grafana                            ClusterIP      10.110.40.76     <none>       
 
 The host name has the format, `<service-name>.<namespace>.svc.cluster.local`. In our case, it would be **`grafana.kubectl-helm.svc.cluster.local`**. We will be using this host name shortly.
 
-Let's now install `grafana` app and import the included dashboards to Grafana.
+Let's now install the `grafana` app and import the included dashboards to Grafana. Execute the following from the PadoGrid pod (JupyterLab).
 
 ```bash
 # Create the grafana app
@@ -681,16 +681,17 @@ Set the Grafana host name.
 GRAFANA_HOST="grafana.kubectl-helm.svc.cluster.local"
 ```
 
-There are two (2) folders included in the PadoGrid distribution as follows.
+There are five (5) folders included in the PadoGrid distribution (v0.9.31+) as follows.
 
-- **padogrid-perf_test** - This folder includes PadoGrid `perf_test` specific dashboards.
+- **Hazelcast-perf_test** - A set of dashboards for monitoring the metrics specific to the `perf_test` app.
+- **Hazelcast** - A set of dashboards for monitoring a single Hazelcast cluster.
+- **HazelcastDual** - A set of dashboards for comparing two (2) Hazelcast clusters side-by-side.
+- **HazelcastAll** - A set of dashboards for federating multiple Hazelcast clusters.
+- **Padogrid** - A set of dashboards for PadoGrid specific dashboards.
 
-- **Hazelecast** - This folder includes a comprehensive set of Hazelcast dashboards that resemble the Hazelcast Management Center (available in PadoGrid 0.9.30+).
+To capture the Hazelcast metrics in Kubernetes, we need to set the `namespae` or `service` label as follows.
 
-To use the **Hazelcast** folder, follow the steps below.
-
-1. Update the Prometheus label and value for filtering Hazelcast clusters. By default, the dashboards are preconfigured with the Promtheus label, 'job' and the value, `hazelcast`. Let's replace the label with 'namespace' so that it is more appropriate for discoverying cluster members in Kubernetes. We can view all the available labels by executing the following `curl` command.
-The dashboards support monitoring multiple Hazelcast clusters. 
+1. Update the Prometheus label and value for filtering Hazelcast clusters. By default, the dashboards are preconfigured with the Promtheus label, 'job' and the value, `hazelcast`. Let's replace the label with 'namespace' which allows us to discover cluster members in Kubernetes. We can view all the available labels by executing the following `curl` command.
 
 ```bash
 curl -sG http://prometheus.kubectl-helm.svc.cluster.local:9090/federate -d 'match[]={__name__!=""}'  | grep com_hazelcast_Metrics_nodes
@@ -702,10 +703,10 @@ Output:
 
 com_hazelcast_Metrics_nodes{container="kubectl-helm-hazelcast-enterprise",endpoint="metrics",exported_instance="youthful_satoshi",instance="10.1.1.148:8080",job="kubectl-helm-hazelcast-enterprise-metrics",**namespace="kubectl-helm"**,pod="kubectl-helm-hazelcast-enterprise-2",prefix="raft",service="kubectl-helm-hazelcast-enterprise-metrics",prometheus="kubectl-helm/prometheus",prometheus_replica="prometheus-prometheus-0"} 0 1697026561551
  
-In the above output, we see the value of `namespace` is `kubectl-helm`. Now, run `update_cluster_templating` to replace the label and its value.
+In the above output, we see the value of `namespace` is `kubectl-helm`. Now, run `padogrid_update_cluster_templating` to replace the label and its value.
 
 ```bash
-./update_cluster_templating -label namespace -clusters kubectl-helm
+./padogrid_update_cluster_templating -label namespace
 ```
 
 ✏️  Note that the `-clusters` option takes a comma-separated list of cluster names for monitoring multiple clusters. For example, if you have Hazelcast clusters running in different namespaces, then you would list their namespace values separated by comma for the `-clusters` option. 
