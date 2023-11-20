@@ -691,8 +691,6 @@ In the above output, we see the value of `namespace` is `kubectl-helm`. Now, run
 ./padogrid_update_cluster_templating -label namespace
 ```
 
-✏️  Note that the `-clusters` option takes a comma-separated list of cluster names for monitoring multiple clusters. For example, if you have Hazelcast clusters running in different namespaces, then you would list their namespace values separated by comma for the `-clusters` option. 
-
 ### 13.3. Import Dashboards
 
 You can import folders individually or all at once. Let's import them all as follows.
