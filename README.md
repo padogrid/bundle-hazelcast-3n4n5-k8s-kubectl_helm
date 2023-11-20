@@ -34,50 +34,11 @@ This bundle installs Hazelcast and PadoGrid containers to run on Kubernetes. It 
 k8s
 └── kubectl_helm
     ├── bin_sh
-    │   ├── build_app
-    │   ├── cleanup
-    │   ├── copy_jar_to_pvc
-    │   ├── create_keystores
-    │   ├── list_keystores
-    │   ├── login_padogrid_pod
-    │   ├── remove_keystores
-    │   ├── setenv.sh
-    │   ├── start_dashboard
-    │   ├── start_hazelcast
-    │   ├── start_ingress
-    │   ├── start_monitor
-    │   ├── start_padogrid
-    │   ├── stop_dashboard
-    │   ├── stop_hazelcast
-    │   ├── stop_ingress
-    │   ├── stop_monitor
-    │   └── stop_padogrid
     ├── dashboard
-    │   ├── admin-user.yaml
-    │   └── crb.yaml
     ├── etc
-    │   └── hazelcast-enterprise
     ├── hazelcast
-    │   ├── hz-secret.yaml
-    │   ├── jar-pod.yaml
-    │   ├── jar-pvc.yaml
-    │   ├── mc-ingress-enterprise.yaml
-    │   ├── mc-ingress-oss.yaml
-    │   ├── mc-secret.yaml
-    │   └── values.yaml
     ├── monitor
-    │   ├── expose-prometheus.yaml
-    │   ├── prometheus-instance.yaml
-    │   ├── prometheus-operator.yaml
-    │   ├── prometheus-rbac.yaml
-    │   └── service-monitor.yaml
     └── padogrid
-        ├── padogrid-configmap-enterprise.yaml
-        ├── padogrid-configmap-oss.yaml
-        ├── padogrid-ingress.yaml
-        ├── padogrid-no-pvc.yaml
-        ├── padogrid.yaml
-        └── pv-hostPath.yaml
 ```
 
 ## Kubernetes Resources
@@ -91,7 +52,24 @@ minikube config set memory 10240
 
 ## 1. Build Local Environment
 
-Run `build_app` which initializes your local environment. This script sets the license key in the `hazelcast/secret.yaml` file.
+If you will be using Hazelcast Enterprise, then place your license keys in the `.hazelcastenv.sh` file as follows.
+
+```bash
+cd_rwe
+vi .hazelcastenv.sh
+```
+
+Set the license keys in `.hazelcastenv.sh`.
+
+```console
+# For Hazelcast cluster
+IMDG_LICENSE_KEY=...
+
+# For Management Center
+MC_LICENSE_KEY=...
+```
+
+Run `build_app` which initializes your local environment. This script sets the license keys in the `hazelcast/secret.yaml` file.
 
 ```bash
 cd_k8s kubectl_helm/bin_sh
@@ -311,9 +289,11 @@ kubectl-helm-hazelcast-enterprise-mancenter   LoadBalancer   172.30.178.54   <pe
 
 ## 7. Management Center
 
+The Management Center instance can be accessed in one of the methods described in the subequent sections.
+
 ### 7.1. HTTPS
 
-If you ran `start_ingress` as described in [Section 4](#4-optional-install-ingress-for-managment-center-https) then you can access Management Center via HTTPS. The `start_ingress` script creates a self-signed key with `CN=*.demo.com` (see `bin_sh/start_ingress`) and sets an ingress rule to filter the host `mancenter.demo.com` (see `etc/ingress.yaml`) so that you can use `mancenter.demo.com` to access Management Center.
+If you started `start_ingress` as described in [Section 4](#4-optional-install-ingress-for-managment-center-https) then you can access Management Center via HTTPS. The `start_ingress` script creates a self-signed key with `CN=*.demo.com` (see `bin_sh/start_ingress`) and sets an ingress rule to filter the host `mancenter.demo.com` (see `etc/ingress.yaml`) so that you can use `mancenter.demo.com` to access Management Center.
 
 Let's run `kubectl get ingress` to view ingress resources.
 
@@ -390,6 +370,8 @@ You can access Management Center using `localhost`.
 
 ## 8. Launch PadoGrid
 
+Let's launch the PadoGrid container so that we can ingest data into the Hazelcast cluster and import Grafana dashboards to monitor Hazelcast.
+
 ```bash
 cd_k8s kubectl_helm/bin_sh
 ./start_padogrid
@@ -397,7 +379,7 @@ cd_k8s kubectl_helm/bin_sh
 
 ## 9. Login to PadoGrid
 
-You can use the PadoGrid pod as a client to the Hazelcast cluster. There are two (2) ways to login to the PadoGrid pod.
+You can use the PadoGrid pod as a client to the Hazelcast cluster. This section describes different ways to login to the PadoGrid pod.
 
 ### 9.1. HTTPS - Ingress
 
@@ -468,7 +450,7 @@ cd_k8s kubectl_helm/bin_sh
 ./login_padogrid_pod
 ```
 
-### 9.5. Ingest Data
+### 10. Ingest Data
 
 The `start_padogrid` script automatically sets the Hazelcast service and the namespace for constructing the DNS address needed by the `perf_test` app to connect to the Hazelcast cluster. This allows us to simply login to the PadoGrid pod and run the `perf_test` app.
 
@@ -574,7 +556,7 @@ Read the **nw** data:
 ./read_cache nw/orders
 ```
 
-## 10. Manually Configuring `perf_test`
+### 11. Manually Configuring `perf_test`
 
 The `test_ingestion` script may fail to connect to the Hazelcast cluster if you started the PadoGrid pod before the Hazelcast cluster is started. In that case, you can simply restart PadoGrid. If it still fails even after the Hazelcast cluster has been started first, then you can manually enter the DNS address in the `etc/hazelcast-client-k8s.xml` file as described below.
 
@@ -583,7 +565,7 @@ cd_app perf_test
 vi etc/hazelcast-client-k8s.xml
 ```
 
-### 10.1. Hazelcast Enterprise
+### 11.1. Hazelcast Enterprise
 
 Enter the following in the `etc/hazelcast-client-k8s.xml` file. `kubectl-helm-hazelcast-enterprise` is the service and  `kubectl-helm` is the project name.
 
@@ -593,7 +575,7 @@ Enter the following in the `etc/hazelcast-client-k8s.xml` file. `kubectl-helm-ha
                 </kubernetes>
 ```
 
-### 10.2. Hazelcast OSS
+### 11.2. Hazelcast OSS
 
 Enter the following in the `etc/hazelcast-client-k8s.xml` file. `kubectl-helm-hazelcast` is the service and  `kubectl-helm` is the project name.
 
@@ -603,11 +585,11 @@ Enter the following in the `etc/hazelcast-client-k8s.xml` file. `kubectl-helm-ha
                 </kubernetes>
 ```
 
-## 11. Hazelcast Playground
+## 12. Hazelcast Playground
 
 In addition to `perf_test`, you can optionally install the [Hazelcast Playground](https://github.com/padogrid/bundle-hazelcast-5-playground-python) bundle to ingest data in various data structures. Hazelcast Playground is a GUI tool for testing Hazelcast data structures.
 
-### 11.1. Install Hazelcast PLayground
+### 12.1. Install Hazelcast Playground
 
 ```bash
 install_bundle -checkout bundle-hazelcast-5-playground-python
@@ -616,14 +598,14 @@ cd_app playground
 pip install -r requirements.txt
 ```
 
-### 11.2. Start Hazelcast Playground
+### 12.2. Start Hazelcast Playground
 
 ```bash
 cd_app playground/bin_sh
 ./start_playground
 ```
 
-### 11.3. Minikube, Docker Desktop Kubernetes
+### 12.3. Minikube, Docker Desktop Kubernetes
 
 Port-forward Hazelcast Playground:
 
@@ -639,9 +621,9 @@ Enter the endpoint that applies to your environment from the list below in the *
   - Hazelcast Enterprise: `dev@kubectl-helm-hazelcast-enterprise:5701`
   - Hazelcast OSS: `dev@kubectl-helm-hazelcast:5701`
 
-## 12. Grafana App
+## 13. Grafana App
 
-### 12.1. Install Grafana App
+### 13.1. Install Grafana App
 
 Before we install the Padogrid's `grafana` app, verify the Grafana service name by executing the following.
 
@@ -666,7 +648,7 @@ Let's now install the `grafana` app and import the included dashboards to Grafan
 create_app -product hazelcast -app grafana
 ```
 
-### 12.2. Configure Grafana App
+### 13.2. Configure Grafana App
 
 Edit `setenv.sh` and set the Grafana host.
 
@@ -711,7 +693,7 @@ In the above output, we see the value of `namespace` is `kubectl-helm`. Now, run
 
 ✏️  Note that the `-clusters` option takes a comma-separated list of cluster names for monitoring multiple clusters. For example, if you have Hazelcast clusters running in different namespaces, then you would list their namespace values separated by comma for the `-clusters` option. 
 
-### 12.3. Import Dashboards
+### 13.3. Import Dashboards
 
 You can import folders individually or all at once. Let's import them all as follows.
 
@@ -722,7 +704,7 @@ cd_app grafana/bin_sh
 
 Grafana URL: <http://localhost:3000>
 
-### 12.4. Update Prometheus Data Source
+### 13.4. Update Prometheus Data Source
 
 Finally, from the Grafana console, create a Prometheus data source as follows.
 
@@ -738,11 +720,11 @@ Now, you are ready to view the dashboards.
 2. From the *Dashboards* pane, select **Hazelcast/00Main** to view the main dashboard for monitoring the Hazelcast cluster.
 3. From the *Dashboards* pane, select any of the *padogrid-perf_test* dashboards to monitor `perf_test` specific metrics.
 
-## 13. External Hazelcast Clients
+## 14. External Hazelcast Clients
 
 You can access the Hazelcast cluster running inside Kubernetes from external clients by properly configuring the endpoints.
 
-### 13.1. Minikube
+### 14.1. Minikube
 
 You can also expose the Hazelcast member service via minikube tunnel and use external clients to connect to the Hazelcast cluster running in Minikube.
 
@@ -787,7 +769,7 @@ cd_app perf_test/bin_sh
 ./test_ingestion -run
 ```
 
-### 13.2. Docker Desktop Kubernetes
+### 14.2. Docker Desktop Kubernetes
 
 Port-foward Hazelcast:
 
@@ -808,16 +790,16 @@ cd_app perf_test/bin_sh
 ./test_ingestion -run
 ```
 
-## 14. Kubernetes Dashboard
+## 15. Kubernetes Dashboard
 
-### 14.1. Minikube
+### 15.1. Minikube
 
 ```bash
 minikube addon enable dashboard
 minikube addon enable metrics-server
 ```
 
-### 14.2. Other Kubernete Variants
+### 15.2. Other Kubernete Variants
 
 If your Kubernetes does not include a dashboard, then you can manually install [Kubernetes Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/) or simply run the included `start_dashboard` command.
 
@@ -873,9 +855,9 @@ Once started, follow the output instructions to set `--token-ttl=0`, generate a 
 
 - URL: <http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/>
 
-## 15. Teardown
+## 16. Teardown
 
-### 15.1. Hazelcast Enterprise
+### 16.1. Hazelcast Enterprise
 
 ```bash
 cd_k8s kubectl_helm/bin_sh
@@ -883,7 +865,7 @@ cd_k8s kubectl_helm/bin_sh
 kubectl delete namespaces kubectl-helm
 ```
 
-### 15.2. Hazelcast OSS
+### 16.2. Hazelcast OSS
 
 ```bash
 cd_k8s kubectl_helm/bin_sh
@@ -891,7 +873,7 @@ cd_k8s kubectl_helm/bin_sh
 kubectl delete namespaces kubectl-helm
 ```
 
-## 16. References
+## References
 
 1. Hazelcast Charts, Hazelcast, [https://github.com/hazelcast/charts](https://github.com/hazelcast/charts)
 2. Hazelcast OpenShift Helm Charts, PadoGrid, [https://github.com/padogrid/bundle-hazelcast-3n4n5-k8s-oc_helm](https://github.com/padogrid/bundle-hazelcast-3n4n5-k8s-oc_helm)
@@ -902,4 +884,3 @@ kubectl delete namespaces kubectl-helm
 ---
 
 ![PadoGrid](https://github.com/padogrid/padogrid/raw/develop/images/padogrid-3d-16x16.png) [*PadoGrid*](https://github.com/padogrid) | [*Catalogs*](https://github.com/padogrid/catalog-bundles/blob/master/all-catalog.md) | [*Manual*](https://github.com/padogrid/padogrid/wiki) | [*FAQ*](https://github.com/padogrid/padogrid/wiki/faq) | [*Releases*](https://github.com/padogrid/padogrid/releases) | [*Templates*](https://github.com/padogrid/padogrid/wiki/Using-Bundle-Templates) | [*Pods*](https://github.com/padogrid/padogrid/wiki/Understanding-Padogrid-Pods) | [*Kubernetes*](https://github.com/padogrid/padogrid/wiki/Kubernetes) | [*Docker*](https://github.com/padogrid/padogrid/wiki/Docker) | [*Apps*](https://github.com/padogrid/padogrid/wiki/Apps) | [*Quick Start*](https://github.com/padogrid/padogrid/wiki/Quick-Start)
-:set nonumber
