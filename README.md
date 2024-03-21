@@ -3,7 +3,7 @@
 ---
 
 <!-- Platforms -->
-[![Host OS](https://github.com/padogrid/padogrid/wiki/images/padogrid-host-os.drawio.svg)](https://github.com/padogrid/padogrid/wiki/Platform-Host-OS)
+[![PadoGrid 1.x](https://github.com/padogrid/padogrid/wiki/images/padogrid-padogrid-1.x.drawio.svg)](https://github.com/padogrid/padogrid/wiki/Platform-PadoGrid-1.x) [![Host OS](https://github.com/padogrid/padogrid/wiki/images/padogrid-host-os.drawio.svg)](https://github.com/padogrid/padogrid/wiki/Platform-Host-OS) [![Kubernetes](https://github.com/padogrid/padogrid/wiki/images/padogrid-kubernetes.drawio.svg)](https://github.com/padogrid/padogrid/wiki/Platform-Kubernetes)
 
 # Hazelcast Kubernetes Helm Charts
 
@@ -23,7 +23,6 @@ This bundle installs Hazelcast and PadoGrid containers to run on Kubernetes. It 
 
 ## Required Software
 
-- PadoGrid 0.9.30+
 - Kubernetes CLI, **kubectl**
 - [Helm](https://helm.sh/docs/intro/install/), **helm**
 - `openssl` (optional)
@@ -450,7 +449,106 @@ cd_k8s kubectl_helm/bin_sh
 ./login_padogrid_pod
 ```
 
-### 10. Ingest Data
+## 10. Grafana App
+
+### 10.1. Install Grafana App
+
+Before we install the Padogrid's `grafana` app, verify the Grafana service name by executing the following from you host OS.
+
+```bash
+kubectl get svc
+```
+
+Output:
+
+```console
+NAME                               TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                        AGE
+grafana                            ClusterIP      10.110.40.76     <none>        3000/TCP                       47m
+...
+```
+
+The host name has the format, `<service-name>.<namespace>.svc.cluster.local`. In our case, it would be **`grafana.kubectl-helm.svc.cluster.local`**. We will be using this host name shortly.
+
+Let's now install the `grafana` app and import the included dashboards to Grafana. Execute the following from the PadoGrid pod (JupyterLab).
+
+```bash
+# Create the grafana app
+create_app -product hazelcast -app grafana
+```
+
+### 10.2. Configure Grafana App
+
+Edit `setenv.sh` and set the Grafana host.
+
+```bash
+cd_app grafana/bin_sh
+vi setenv.sh
+```
+
+Set the Grafana host name.
+
+```bash
+GRAFANA_HOST="grafana.kubectl-helm.svc.cluster.local"
+```
+
+There are five (5) folders included in the PadoGrid distribution (v0.9.31+) as follows.
+
+- **Hazelcast-perf_test** - A set of dashboards for monitoring the metrics specific to the `perf_test` app.
+- **Hazelcast** - A set of dashboards for monitoring a single Hazelcast cluster.
+- **HazelcastDual** - A set of dashboards for comparing two (2) Hazelcast clusters side-by-side.
+- **HazelcastAll** - A set of dashboards for federating multiple Hazelcast clusters.
+- **Padogrid** - A set of dashboards for PadoGrid specific dashboards.
+
+To capture the Hazelcast metrics in Kubernetes, we need to set the `namespae` or `service` label as follows.
+
+1. Update the Prometheus label and value for filtering Hazelcast clusters. By default, the dashboards are preconfigured with the Promtheus label, 'job' and the value, `hazelcast`. Let's replace the label with 'namespace' which allows us to discover cluster members in Kubernetes. We can view all the available labels by executing the following `curl` command.
+
+```bash
+curl -sG http://prometheus.kubectl-helm.svc.cluster.local:9090/federate -d 'match[]={__name__!=""}'  | grep com_hazelcast_Metrics_nodes
+```
+
+Output:
+
+...
+
+com_hazelcast_Metrics_nodes{container="kubectl-helm-hazelcast-enterprise",endpoint="metrics",exported_instance="youthful_satoshi",instance="10.1.1.148:8080",job="kubectl-helm-hazelcast-enterprise-metrics",**namespace="kubectl-helm"**,pod="kubectl-helm-hazelcast-enterprise-2",prefix="raft",service="kubectl-helm-hazelcast-enterprise-metrics",prometheus="kubectl-helm/prometheus",prometheus_replica="prometheus-prometheus-0"} 0 1697026561551
+ 
+In the above output, we see the value of `namespace` is `kubectl-helm`. Now, run `padogrid_update_cluster_templating` to replace the label and its value.
+
+```bash
+./padogrid_update_cluster_templating -label namespace
+```
+
+### 10.3. Import Dashboards
+
+You can import folders individually or all at once. Let's import them all as follows.
+
+```bash
+cd_app grafana/bin_sh
+./import_folder -all
+```
+
+Grafana URL: <http://localhost:3000>
+
+### 10.4. Update Prometheus Data Source
+
+Finally, from the Grafana console, create a Prometheus data source as follows.
+
+1. From the *Home* pane, select *Connections/Data sources*.
+2. From the *Data sources* pane, select *Prometheus*.
+3. From the *Prometheus* pane, update the following field.
+   - Prometheus server URL: **http://prometheus.kubectl-helm.svc.cluster.local:9090**
+4. At the bottom of the *Prometheus* pane, select the *Save & test* button.
+
+Now, you are ready to view the dashboards. 
+
+1. From the *Home* pane, select *Dashboards*
+2. From the *Dashboards* pane, select **Hazelcast/00Main** to view the main dashboard for monitoring the Hazelcast cluster.
+3. From the *Dashboards* pane, select any of the *padogrid-perf_test* dashboards to monitor `perf_test` specific metrics.
+
+![Grafana Screenshot](images/grafana-screenshot.png)
+
+### 11. Ingest Data
 
 The `start_padogrid` script automatically sets the Hazelcast service and the namespace for constructing the DNS address needed by the `perf_test` app to connect to the Hazelcast cluster. This allows us to simply login to the PadoGrid pod and run the `perf_test` app.
 
@@ -492,7 +590,7 @@ cd_app perf_test/bin_sh
 ./test_group -run -prop ../etc/group-query.properties
 ```
 
-The `group-query.properties` will fail since the mapping tables have not been created. You can create them from the Management Center or as follows.
+The `group-query.properties` will fail since the mapping tables have not been created. You can create them from the Management Center or by executing the `hz-cli` command as follows.
 
 First, get the cluster IP address.
 
@@ -545,13 +643,18 @@ sql> exit;
 Now, run the query test again.
 
 ```bash
+cd_app perf_test/bin_sh
 ./test_group -run -prop ../etc/group-query.properties
 ```
 
+The above command iteratively queries the `nw/customers` and `nw/orders` maps that have been indexed. To monitor the index metrics, select *Home/Dashboards/Hazelcast/Map Query Charts* from Grafana.
 
-Read the **nw** data:
+![Grafana Map Query Charts](images/map-query-charts.png)
+
+You can run the `read_cache` command to read the ingested data.
 
 ```bash
+cd_app perf_test/bin_sh
 ./read_cache nw/customers
 ./read_cache nw/orders
 ```
@@ -620,103 +723,6 @@ Enter the endpoint that applies to your environment from the list below in the *
 - Cluster Connection Endpoints
   - Hazelcast Enterprise: `dev@kubectl-helm-hazelcast-enterprise:5701`
   - Hazelcast OSS: `dev@kubectl-helm-hazelcast:5701`
-
-## 13. Grafana App
-
-### 13.1. Install Grafana App
-
-Before we install the Padogrid's `grafana` app, verify the Grafana service name by executing the following.
-
-```bash
-kubectl get svc
-```
-
-Output:
-
-```console
-NAME                               TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                        AGE
-grafana                            ClusterIP      10.110.40.76     <none>        3000/TCP                       47m
-...
-```
-
-The host name has the format, `<service-name>.<namespace>.svc.cluster.local`. In our case, it would be **`grafana.kubectl-helm.svc.cluster.local`**. We will be using this host name shortly.
-
-Let's now install the `grafana` app and import the included dashboards to Grafana. Execute the following from the PadoGrid pod (JupyterLab).
-
-```bash
-# Create the grafana app
-create_app -product hazelcast -app grafana
-```
-
-### 13.2. Configure Grafana App
-
-Edit `setenv.sh` and set the Grafana host.
-
-```bash
-cd_app grafana/bin_sh
-vi setenv.sh
-```
-
-Set the Grafana host name.
-
-```bash
-GRAFANA_HOST="grafana.kubectl-helm.svc.cluster.local"
-```
-
-There are five (5) folders included in the PadoGrid distribution (v0.9.31+) as follows.
-
-- **Hazelcast-perf_test** - A set of dashboards for monitoring the metrics specific to the `perf_test` app.
-- **Hazelcast** - A set of dashboards for monitoring a single Hazelcast cluster.
-- **HazelcastDual** - A set of dashboards for comparing two (2) Hazelcast clusters side-by-side.
-- **HazelcastAll** - A set of dashboards for federating multiple Hazelcast clusters.
-- **Padogrid** - A set of dashboards for PadoGrid specific dashboards.
-
-To capture the Hazelcast metrics in Kubernetes, we need to set the `namespae` or `service` label as follows.
-
-1. Update the Prometheus label and value for filtering Hazelcast clusters. By default, the dashboards are preconfigured with the Promtheus label, 'job' and the value, `hazelcast`. Let's replace the label with 'namespace' which allows us to discover cluster members in Kubernetes. We can view all the available labels by executing the following `curl` command.
-
-```bash
-curl -sG http://prometheus.kubectl-helm.svc.cluster.local:9090/federate -d 'match[]={__name__!=""}'  | grep com_hazelcast_Metrics_nodes
-```
-
-Output:
-
-...
-
-com_hazelcast_Metrics_nodes{container="kubectl-helm-hazelcast-enterprise",endpoint="metrics",exported_instance="youthful_satoshi",instance="10.1.1.148:8080",job="kubectl-helm-hazelcast-enterprise-metrics",**namespace="kubectl-helm"**,pod="kubectl-helm-hazelcast-enterprise-2",prefix="raft",service="kubectl-helm-hazelcast-enterprise-metrics",prometheus="kubectl-helm/prometheus",prometheus_replica="prometheus-prometheus-0"} 0 1697026561551
- 
-In the above output, we see the value of `namespace` is `kubectl-helm`. Now, run `padogrid_update_cluster_templating` to replace the label and its value.
-
-```bash
-./padogrid_update_cluster_templating -label namespace
-```
-
-### 13.3. Import Dashboards
-
-You can import folders individually or all at once. Let's import them all as follows.
-
-```bash
-cd_app grafana/bin_sh
-./import_folder -all
-```
-
-Grafana URL: <http://localhost:3000>
-
-### 13.4. Update Prometheus Data Source
-
-Finally, from the Grafana console, create a Prometheus data source as follows.
-
-1. From the *Home* pane, select *Connections/Data sources*.
-2. From the *Data sources* pane, select *Prometheus*.
-3. From the *Prometheus* pane, update the following field.
-   - Prometheus server URL: **http://prometheus.kubectl-helm.svc.cluster.local:9090**
-4. At the bottom of the *Prometheus* pane, select the *Save & test* button.
-
-Now, you are ready to view the dashboards. 
-
-1. From the *Home* pane, select *Dashboards*
-2. From the *Dashboards* pane, select **Hazelcast/00Main** to view the main dashboard for monitoring the Hazelcast cluster.
-3. From the *Dashboards* pane, select any of the *padogrid-perf_test* dashboards to monitor `perf_test` specific metrics.
 
 ## 14. External Hazelcast Clients
 
