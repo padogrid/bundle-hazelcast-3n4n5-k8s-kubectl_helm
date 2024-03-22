@@ -132,7 +132,7 @@ minikube addons enable ingress
 
 ### 4.2. Other Kubernete Variants
 
-If your Kubernetes does not include ingress, then you can install it by running the include `start_ingress` script, which performs the following.
+If your Kubernetes does not include ingress, then you can install it by running the provided `start_ingress` script, which performs the following.
 
 - Installs `ingress-nginx` in the `ingress-nginx` namespace
 - Generates self-sign key/certificate using `openssl`
@@ -308,7 +308,7 @@ mc-tls-ingress         nginx   mancenter.demo.com   localhost   80, 443   10m
 padogrid-tls-ingress   nginx   padogrid.demo.com    localhost   80, 443   10m
 ```
 
-In addition to `mc-tls-ingress`, the `start_ingress` script also created `padogrid-tls-ingress` for access PadoGrid via HTTPS. We need to register `mancenter.demo.com` and `padogrid.demo.com` with DNS.
+In addition to `mc-tls-ingress`, the `start_ingress` script also created `padogrid-tls-ingress` for accessing PadoGrid via HTTPS. We need to register `mancenter.demo.com` and `padogrid.demo.com` with DNS.
 
 Edit `/etc/hosts`:
 
@@ -316,7 +316,7 @@ Edit `/etc/hosts`:
 sudo vi /etc/hosts
 ```
 
-Add `mancenter.demo.com` and `padogrid.demo.com` to `127.0.0.1` as follows:
+Now, add the following entry to the `/etc/hosts` file. Make sure to enter the address shown in your output. In our example, the address is `localhost` which has the address, `127.0.0.1`.
 
 ```bash
 127.0.0.1 mancenter.demo.com padogrid.demo.com
